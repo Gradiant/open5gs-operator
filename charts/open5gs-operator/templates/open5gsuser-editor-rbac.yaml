@@ -1,0 +1,25 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: {{ include "open5gs-operator.fullname" . }}-open5gsuser-editor-role
+  labels:
+  {{- include "open5gs-operator.labels" . | nindent 4 }}
+rules:
+- apiGroups:
+  - net.gradiant.org
+  resources:
+  - open5gsusers
+  verbs:
+  - create
+  - delete
+  - get
+  - list
+  - patch
+  - update
+  - watch
+- apiGroups:
+  - net.gradiant.org
+  resources:
+  - open5gsusers/status
+  verbs:
+  - get

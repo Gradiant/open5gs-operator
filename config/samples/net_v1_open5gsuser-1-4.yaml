@@ -1,0 +1,71 @@
+apiVersion: net.gradiant.org/v1
+kind: Open5GSUser
+metadata:
+  labels:
+    app.kubernetes.io/name: open5gs-operator
+    app.kubernetes.io/managed-by: kustomize
+  name: open5gsuser-sample-1
+spec:
+  imsi: "999700000000001"
+  key: "465B5CE8B199B49FAA5F0A2EE238A6BC"
+  opc: "E8ED289DEBA952E4283B54E88E6183CA"
+  sd: "111111"
+  sst: "1"
+  apn: "internet"
+  open5gs:
+    name: "open5gs-sample"
+    namespace: "default"
+---
+apiVersion: net.gradiant.org/v1
+kind: Open5GSUser
+metadata:
+  labels:
+    app.kubernetes.io/name: open5gs-operator
+    app.kubernetes.io/managed-by: kustomize
+  name: open5gsuser-sample-2
+spec:
+  imsi: "999700000000002"
+  key: "465B5CE8B199B49FAA5F0A2EE238A6BC"
+  opc: "E8ED289DEBA952E4283B54E88E6183CA"
+  sd: "111111"
+  sst: "1"
+  apn: "internet"
+  open5gs:
+    name: "open5gs-sample"
+    namespace: "default"
+---
+apiVersion: net.gradiant.org/v1
+kind: Open5GSUser
+metadata:
+  labels:
+    app.kubernetes.io/name: open5gs-operator
+    app.kubernetes.io/managed-by: kustomize
+  name: open5gsuser-sample-3
+spec:
+  imsi: "999700000000003"
+  key: "465B5CE8B199B49FAA5F0A2EE238A6BC"
+  opc: "E8ED289DEBA952E4283B54E88E6183CA"
+  sd: "222222"
+  sst: "2"
+  apn: "internet"
+  open5gs:
+    name: "open5gs-sample"
+    namespace: "default"
+---
+apiVersion: net.gradiant.org/v1
+kind: Open5GSUser
+metadata:
+  labels:
+    app.kubernetes.io/name: open5gs-operator
+    app.kubernetes.io/managed-by: kustomize
+  name: open5gsuser-sample-4
+spec:
+  imsi: "999700000000004"
+  key: "465B5CE8B199B49FAA5F0A2EE238A6BC"
+  opc: "E8ED289DEBA952E4283B54E88E6183CA"
+  sd: "222222"
+  sst: "2"
+  apn: "internet"
+  open5gs:
+    name: "open5gs-sample"
+    namespace: "default"

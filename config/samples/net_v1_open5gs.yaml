@@ -1,0 +1,81 @@
+apiVersion: net.gradiant.org/v1
+kind: Open5GS
+metadata:
+  labels:
+    app.kubernetes.io/name: open5gs-operator
+    app.kubernetes.io/managed-by: kustomize
+  name: open5gs-sample
+  namespace: default
+spec:
+  open5gsImage: "docker.io/gradiant/open5gs:2.7.2"
+  webuiImage: "docker.io/gradiant/open5gs-webui:2.7.2"
+  mongoDBVersion: "5.0.10-debian-11-r3"
+  amf:
+    enabled: true
+    serviceAccount: true
+    metrics: true
+    serviceMonitor: true
+    service:
+      - name: ngap
+        serviceType: ClusterIP
+  ausf:
+    enabled: true
+    serviceAccount: true
+  bsf:
+    enabled: true
+    serviceAccount: true
+  mongoDB:
+    enabled: true
+    serviceAccount: true
+  nrf:
+    enabled: true
+    serviceAccount: true
+  nssf:
+    enabled: true
+    serviceAccount: true
+  pcf:
+    enabled: true
+    metrics: true
+    serviceMonitor: true
+    serviceAccount: true
+  scp:
+    enabled: true
+    serviceAccount: true
+  smf:
+    enabled: true
+    metrics: true
+    serviceMonitor: true
+    serviceAccount: true
+    service:
+      - name: pfcp
+        serviceType: ClusterIP
+  udm:
+    enabled: true
+    serviceAccount: true
+  udr:
+    enabled: true
+    serviceAccount: true
+  upf:
+    enabled: true
+    metrics: true
+    serviceMonitor: true
+    serviceAccount: true
+    service:
+      - name: pfcp
+        serviceType: ClusterIP
+      - name: gtpu
+        serviceType: ClusterIP
+  webui:
+    enabled: true
+    serviceAccount: true
+  configuration:
+    mcc: "999"
+    mnc: "70"
+    tac: "0001"
+    region: "2"
+    set: "1"
+    slices:
+      - sst: "1"
+        sd: "0x111111"
+      # - sst: "2"
+      #   sd: "0x222222"

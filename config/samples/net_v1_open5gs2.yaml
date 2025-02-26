@@ -1,0 +1,15 @@
+apiVersion: net.gradiant.org/v1
+kind: Open5GS
+metadata:
+  labels:
+    app.kubernetes.io/name: open5gs-operator
+    app.kubernetes.io/managed-by: kustomize
+  name: open5gs-sample2
+  namespace: operator
+spec:
+  configuration:
+    slices:
+      - sst: "1"
+        sd: "0x111111"
+      - sst: "2"
+        sd: "0x222222"
