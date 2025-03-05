@@ -1,0 +1,9 @@
+apiVersion: net.gradiant.org/v1
+kind: Open5GS
+metadata:
+  name: open5gs-sample
+spec:
+  configuration:
+    slices:
+    - sst: "1"
+      sd: "0x111111"

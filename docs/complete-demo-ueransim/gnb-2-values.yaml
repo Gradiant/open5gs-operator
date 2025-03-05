@@ -1,0 +1,19 @@
+amf:
+  hostname: open5gs-sample-amf-ngap
+
+mcc: '999'
+mnc: '70'
+sst: 2
+sd: "0x222222"
+tac: '0001'
+
+ues:
+  enabled: true
+  count: 2
+  initialMSISDN: '0000000003'
+  apnList:
+    - type: IPv4
+      apn: internet
+      slice:
+        sst: 2
+        sd: 0x222222

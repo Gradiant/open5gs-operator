@@ -1,0 +1,9 @@
+title: "Gradiant Open5gs Operator"
+description: "Deploy and manage Open5GS on Kubernetes with the Open5GS Operator"
+theme: jekyll-theme-slate
+baseurl: "/open5gs-operator"
+relative_links:
+  enabled: true
+  collections: true
+highlighter: rouge
+markdown: kramdown
