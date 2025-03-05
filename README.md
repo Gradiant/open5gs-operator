@@ -29,42 +29,17 @@ The operator provides full management of Open5GS subscribers, including configur
 
 ## How to Install
 
-### Option 1: Installation using Helm (recommended)
+To install by using Helm, you can use the Helm chart provided in the `charts` directory or the open5gs-operator-1.0.0.tgz file. The chart is also available in the Gradiant Charts repository.
 ```bash
 helm install open5gs-operator oci://registry-1.docker.io/gradiantcharts/open5gs-operator --version 1.0.0
 ```
 
-#### Uninstall with Helm
-
-Delete all the Open5GS and Open5GSUser resources and run:
-
+To uninstall the operator, run:
 ```bash
-helm uninstall open5gs-operator 
-   ```
-
-### Option 2: Installation without Helm
-
-If you prefer not to use Helm, you can apply the Kubernetes manifests directly or use the Makefile to install de CRD and deploy de operator.
-
-```bash
-make deploy IMG=gradiant/open5gs-operator:1.0.0
+helm uninstall open5gs-operator
 ```
 
-#### Uninstall without Helm
-
-Delete all the Open5GS and Open5GSUser resources and run:
-
-```bash
-make undeploy
-```
-
-### Option 3: Run locally (outside the cluster)
-
-This option is only recommended for development
-
-```bash
-make install run
-```
+For the other installation options, you can follow [this guide](https://gradiant.github.io/open5gs-operator/docs/installation-options/installation-options.html).
 
 ## How to Use
 
@@ -84,90 +59,6 @@ make install run
               - sst: "1"
                 sd: "0x111111"
     ```
-
-
-    Here is the most complete example of a deployment file:
-
-    ``` yaml
-    apiVersion: net.gradiant.org/v1
-    kind: Open5GS
-    metadata:
-        name: open5gs-sample
-        namespace: default
-    spec:
-        open5gsImage: "docker.io/gradiant/open5gs:2.7.2"
-        mongoDBVersion: "5.0.10-debian-11-r3"
-        amf:
-            enabled: true
-            serviceAccount: true
-            metrics: true
-            serviceMonitor: true
-            service:
-              - name: ngap
-                serviceType: ClusterIp
-        ausf:
-            enabled: true
-            serviceAccount: true
-        bsf:
-            enabled: true
-            serviceAccount: true
-        mongoDB:
-            enabled: true
-            serviceAccount: true
-        nrf:
-            enabled: true
-            serviceAccount: true
-        nssf:
-            enabled: true
-            serviceAccount: true
-        pcf:
-            enabled: true
-            metrics: true
-            serviceMonitor: true
-            serviceAccount: true
-        scp:
-            enabled: true
-            serviceAccount: true
-        smf:
-            enabled: true
-            metrics: true
-            serviceMonitor: true
-            serviceAccount: true
-            service:
-              - name: pfcp
-                serviceType: ClusterIp
-        udm:
-            enabled: true
-            serviceAccount: true
-        udr:
-            enabled: true
-            serviceAccount: true
-        upf:
-            enabled: true
-            metrics: true
-            serviceMonitor: true
-            serviceAccount: true
-            service:
-              - name: pfcp
-                serviceType: ClusterIp
-              - name: gtpu
-                serviceType: ClusterIp
-        webui:
-            enabled: true
-            serviceAccount: true
-        configuration:
-            mcc: "999"
-            mnc: "70"
-            tac: "0001"
-            region: "2"
-            set: "1"
-            slices:
-            - sst: "1"
-              sd: "0x111111"
-            - sst: "2"
-              sd: "0x222222"
-    ```
-
 
 2. Apply the deployment file:
 
@@ -206,6 +97,10 @@ make install run
    kubectl apply -f open5gsuser-1.yaml
    ```
 
+For more information on how to use the operator and more advanced configurations, please refer to the [Documentation](https://gradiant.github.io/open5gs-operator/).
+
+## Demo
+A complete demo with UERANSIM is available at [this link](https://gradiant.github.io/open5gs-operator/docs/complete-demo-ueransim/complete-demo-ueransim.html).
 
 ## Notes
 1. The operator will restart the necessary pods to apply the changes and that may cause a service interruption. For example, if the `amf.metrics` parameter is changed, the operator will update the AMF deployment to apply the changes, resulting in a service interruption.
@@ -218,76 +113,3 @@ make install run
 8. The `mongoDBVersion` field in the CR specifies the version of the MongoDB image. If not specified, the operator defaults to version `5.0.10-debian-11-r3`.
 9. Components with metric support can generate a `ServiceMonitor` CR to expose metrics to Prometheus. However, ensure that the `ServiceMonitor` CRD is installed in the cluster; otherwise, the operator will encounter an error and fail to create the resource. To create a ServiceMonitor, set the `serviceMonitor` field to `true` in the CR for the desired component.
 
-## Demo
-
-In this demo it is shown how to deploy an Open5GS instance and create several users. Also, it is demonstrated how the changes in the network slices are managed by the operator and a connectivity test is performed to verify that the users are assigned to the correct slice.
-
-The operator is deployed using the following command:
-```bash
-docker pull gradiant/open5gs-operator:1.0.0
-make deploy IMG=gradiant/open5gs-operator:1.0.0
-```
-To observe the logs of the operator:
-```bash
-kubectl logs deployment/open5gs-operator-controller-manager -n open5gs-operator-system -f
-```
-We create an instance of Open5GS with a configured slice:
-```bash
-kubectl apply -f config/samples/net_v1_open5gs.yaml
-```
-Four users are registered, two for each slice:
-```bash
-kubectl apply -f config/samples/net_v1_open5gsuser-1-4.yaml
-```
-UERANSIM is deployed with two GNBs, each with two users:
-```bash
-helm install ueransim-gnb oci://registry-1.docker.io/gradiant/ueransim-gnb --version 0.2.6 --values https://gradiant.github.io/5g-charts/docs/open5gs-ueransim-gnb/gnb-ues-values.yaml --set amf.hostname=open5gs-sample-amf-ngap
-
-helm install ueransim-gnb-2 oci://registry-1.docker.io/gradiant/ueransim-gnb --version 0.2.6 --values https://gradiant.github.io/5g-charts/docs/open5gs-ueransim-gnb/gnb-ues-values.yaml --set amf.hostname=open5gs-sample-amf-ngap,sst=2,sd=0x222222,ues.count=2,ues.initialMSISDN=0000000003,ues.apnList[0].type=IPv4,ues.apnList[0].apn=internet,ues.apnList[0].slice.sst=2,ues.apnList[0].slice.sd=0x222222
-```
-
-It is observed that only the users of the first slice are connected. This is because we only enabled the first slice in the Open5GS instance:
-```bash
-kubectl logs deployment/open5gs-sample-amf -n default
-kubectl logs deployment/ueransim-gnb-ues -n default
-kubectl -n default exec -ti deployment/ueransim-gnb-ues -- ping -I uesimtun0 gradiant.org
-kubectl -n default exec -ti deployment/ueransim-gnb-ues -- ping -I uesimtun1 gradiant.org
-kubectl logs deployment/ueransim-gnb-2-ues -n default
-kubectl -n default exec -ti deployment/ueransim-gnb-2-ues -- ping -I uesimtun0 gradiant.org
-kubectl -n default exec -ti deployment/ueransim-gnb-2-ues -- ping -I uesimtun1 gradiant.org
-```
-UERANSIM in undeployed:
-```bash
-helm uninstall ueransim-gnb
-helm uninstall ueransim-gnb-2
-```
-Now you must uncomment the second slice in the Open5GS CR `config/samples/net_v1_open5gs.yaml` and apply it. You can uncomment the lines with:
-```bash
-sed 's/^\(\s*\)#\( \?\)/\1/' config/samples/net_v1_open5gs.yaml > config/samples/net_v1_open5gs-uncommented.yaml
-kubectl apply -f config/samples/net_v1_open5gs-uncommented.yaml
-```
-Wait until AMF and NSSF are `Running` again and deploy UERANSIM:
-```bash
-helm install ueransim-gnb oci://registry-1.docker.io/gradiant/ueransim-gnb --version 0.2.6 --values https://gradiant.github.io/5g-charts/docs/open5gs-ueransim-gnb/gnb-ues-values.yaml --set amf.hostname=open5gs-sample-amf-ngap
-
-helm install ueransim-gnb-2 oci://registry-1.docker.io/gradiant/ueransim-gnb --version 0.2.6 --values https://gradiant.github.io/5g-charts/docs/open5gs-ueransim-gnb/gnb-ues-values.yaml --set amf.hostname=open5gs-sample-amf-ngap,sst=2,sd=0x222222,ues.count=2,ues.initialMSISDN=0000000003,ues.apnList[0].type=IPv4,ues.apnList[0].apn=internet,ues.apnList[0].slice.sst=2,ues.apnList[0].slice.sd=0x222222
-```
-We observe that the users of both slices are connected:
-```bash
-kubectl logs deployment/open5gs-sample-amf -n default
-kubectl logs deployment/ueransim-gnb-ues -n default
-kubectl -n default exec -ti deployment/ueransim-gnb-ues -- ping -I uesimtun0 gradiant.org
-kubectl -n default exec -ti deployment/ueransim-gnb-ues -- ping -I uesimtun1 gradiant.org
-kubectl logs deployment/ueransim-gnb-2-ues -n default
-kubectl -n default exec -ti deployment/ueransim-gnb-2-ues -- ping -I uesimtun0 gradiant.org
-kubectl -n default exec -ti deployment/ueransim-gnb-2-ues -- ping -I uesimtun1 gradiant.org
-```
-
-Uninstall everything:
-```bash
-helm uninstall ueransim-gnb
-helm uninstall ueransim-gnb-2
-kubectl delete -f config/samples/net_v1_open5gsuser-1-4.yaml
-kubectl delete -f config/samples/net_v1_open5gs.yaml
-make undeploy
-```
