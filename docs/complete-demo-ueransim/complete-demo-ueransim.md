@@ -74,7 +74,10 @@ Uninstall everything:
 ```bash
 helm uninstall ueransim-gnb-1
 helm uninstall ueransim-gnb-2
-kubectl delete -f config/samples/net_v1_open5gsuser-1-4.yaml
-kubectl delete -f config/samples/net_v1_open5gs.yaml
+kubectl delete open5gsusers.net.gradiant.org open5gsuser-sample-1
+kubectl delete open5gsusers.net.gradiant.org open5gsuser-sample-2
+kubectl delete open5gsusers.net.gradiant.org open5gsuser-sample-3
+kubectl delete open5gsusers.net.gradiant.org open5gsuser-sample-4 
+kubectl delete open5gs open5gs-sample
 helm uninstall open5gs-operator
 ```
