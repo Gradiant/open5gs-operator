@@ -1051,7 +1051,7 @@ func CreateMongoDBPVC(namespace, open5gsName string) *corev1.PersistentVolumeCla
 	}
 }
 
-func CreateMongoDBDeployment(namespace, open5gsName, tag string, envVars []corev1.EnvVar, serviceAccountName string) *appsv1.Deployment {
+func CreateMongoDBDeployment(namespace, open5gsName, image string, envVars []corev1.EnvVar, serviceAccountName string) *appsv1.Deployment {
 	if serviceAccountName == "" {
 		serviceAccountName = "default"
 	}
@@ -1086,7 +1086,7 @@ func CreateMongoDBDeployment(namespace, open5gsName, tag string, envVars []corev
 					Containers: []corev1.Container{
 						{
 							Name:  "mongodb",
-							Image: "docker.io/bitnami/mongodb:" + tag,
+							Image: image,
 							Env:   envVars,
 							Ports: []corev1.ContainerPort{
 								{

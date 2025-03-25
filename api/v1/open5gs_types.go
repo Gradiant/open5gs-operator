@@ -25,9 +25,9 @@ type Open5GSSpec struct {
 	UDR            Open5GSFunction      `json:"udr,omitempty" default:"{\"enabled\":true,\"serviceAccount\":false,\"metrics\":false,\"serviceMonitor\":false}"`
 	UPF            Open5GSFunction      `json:"upf,omitempty" default:"{\"enabled\":true,\"serviceAccount\":false,\"metrics\":true,\"serviceMonitor\":false}"`
 	WebUI          Open5GSFunction      `json:"webui,omitempty" default:"{\"enabled\":false,\"serviceAccount\":false,\"metrics\":false,\"serviceMonitor\":false}"`
-	WebUIImage     string               `json:"webuiImage,omitempty" default:"docker.io/gradiant/open5gs-webui:2.7.2"`
-	Open5GSImage   string               `json:"open5gsImage,omitempty" default:"docker.io/gradiant/open5gs:2.7.2"`
-	MongoDBVersion string               `json:"mongoDBVersion,omitempty" default:"5.0.10-debian-11-r3"`
+	WebUIImage     string               `json:"webuiImage,omitempty" default:"docker.io/gradiant/open5gs-webui:2.7.3"`
+	Open5GSImage   string               `json:"open5gsImage,omitempty" default:"docker.io/gradiant/open5gs:2.7.3"`
+	MongoDBVersion string               `json:"mongoDBVersion,omitempty" default:"bitnami/mongodb:8.0.6-debian-12-r0"`
 	Configuration  Open5GSConfiguration `json:"configuration,omitempty" default:"{\"mcc\":\"999\",\"mnc\":\"70\",\"region\":\"2\",\"set\":\"1\",\"tac\":\"0001\",\"slices\":[]}"`
 }
 

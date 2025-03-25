@@ -44,7 +44,7 @@ var _ = Describe("controller", Ordered, func() {
 			var controllerPodName string
 			var err error
 
-			var projectimage = "gradiant/open5gs-operator:1.0.0"
+			var projectimage = "gradiant/open5gs-operator:1.0.1"
 
 			// By("building the manager(Operator) image")
 			// cmd := exec.Command("make", "docker-build", fmt.Sprintf("IMG=%s", projectimage))
