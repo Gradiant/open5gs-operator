@@ -2,7 +2,7 @@
 
 ### Option 1: Installation using Helm (recommended)
 ```bash
-helm install open5gs-operator oci://registry-1.docker.io/gradiantcharts/open5gs-operator --version 1.0.0
+helm install open5gs-operator oci://registry-1.docker.io/gradiantcharts/open5gs-operator --version 1.0.1
 ```
 
 #### Uninstall with Helm
@@ -18,7 +18,7 @@ helm uninstall open5gs-operator
 If you prefer not to use Helm, you can apply the Kubernetes manifests directly or use the Makefile to install de CRD and deploy the operator.
 
 ```bash
-make deploy IMG=gradiant/open5gs-operator:1.0.0
+make deploy IMG=gradiant/open5gs-operator:1.0.1
 ```
 
 #### Uninstall without Helm

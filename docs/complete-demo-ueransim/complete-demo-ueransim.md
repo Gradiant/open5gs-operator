@@ -4,11 +4,11 @@ In this demo it is shown how to deploy an Open5GS instance and create several us
 
 The operator is deployed using the following command:
 ```bash
-helm install open5gs-operator oci://registry-1.docker.io/gradiantcharts/open5gs-operator --version 1.0.0
+helm install open5gs-operator oci://registry-1.docker.io/gradiantcharts/open5gs-operator --version 1.0.1
 ```
 To observe the logs of the operator:
 ```bash
-kubectl logs deployment/open5gs-operator-controller-manager -n open5gs-operator-system -f
+kubectl logs deployment/open5gs-operator-controller-manager -f
 ```
 We create an instance of Open5GS with a configured slice:
 ```bash
