@@ -4,11 +4,11 @@ In this demo it is shown how to deploy an Open5GS instance and create several us
 
 The operator is deployed using the following command:
 ```bash
-helm install open5gs-operator oci://registry-1.docker.io/gradiantcharts/open5gs-operator --version 1.0.0
+helm install open5gs-operator oci://registry-1.docker.io/gradiantcharts/open5gs-operator --version 1.0.1
 ```
 To observe the logs of the operator:
 ```bash
-kubectl logs deployment/open5gs-operator-controller-manager -n open5gs-operator-system -f
+kubectl logs deployment/open5gs-operator-controller-manager -f
 ```
 We create an instance of Open5GS with a configured slice:
 ```bash
@@ -74,7 +74,10 @@ Uninstall everything:
 ```bash
 helm uninstall ueransim-gnb-1
 helm uninstall ueransim-gnb-2
-kubectl delete -f config/samples/net_v1_open5gsuser-1-4.yaml
-kubectl delete -f config/samples/net_v1_open5gs.yaml
+kubectl delete open5gsusers.net.gradiant.org open5gsuser-sample-1
+kubectl delete open5gsusers.net.gradiant.org open5gsuser-sample-2
+kubectl delete open5gsusers.net.gradiant.org open5gsuser-sample-3
+kubectl delete open5gsusers.net.gradiant.org open5gsuser-sample-4 
+kubectl delete open5gs open5gs-sample
 helm uninstall open5gs-operator
 ```

@@ -10,7 +10,7 @@ metadata:
 spec:
     configuration:
         slices:
-            - sst: "1"
+          - sst: "1"
             sd: "0x111111"
     ```
     <a href="https://gradiant.github.io/open5gs-operator/docs/basic-deployment/open5gs-basic-deployment.yaml" class="download-button" download>Download open5gs-basic-deployment.yaml</a>
