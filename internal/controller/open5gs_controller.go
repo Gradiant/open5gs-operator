@@ -1256,10 +1256,10 @@ func setDefaultValues(open5gs *netv1.Open5GS) {
 		open5gs.Spec.Configuration.Slices = append(open5gs.Spec.Configuration.Slices, slice)
 	}
 	if open5gs.Spec.Open5GSImage == "" {
-		open5gs.Spec.Open5GSImage = "docker.io/gradiant/open5gs:2.7.3"
+		open5gs.Spec.Open5GSImage = "docker.io/gradiant/open5gs:2.7.4"
 	}
 	if open5gs.Spec.WebUIImage == "" {
-		open5gs.Spec.WebUIImage = "docker.io/gradiant/open5gs-webui:2.7.3"
+		open5gs.Spec.WebUIImage = "docker.io/gradiant/open5gs-webui:2.7.4"
 	}
 	if open5gs.Spec.MongoDBVersion == "" {
 		open5gs.Spec.MongoDBVersion = "bitnami/mongodb:8.0.6-debian-12-r0"
