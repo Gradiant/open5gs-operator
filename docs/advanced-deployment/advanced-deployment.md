@@ -115,7 +115,7 @@ metadata:
   name: open5gs-sample
 spec:
   open5gsImage: "docker.io/gradiant/open5gs:2.7.4"
-  webuiImage: "docker.io/gradiant/open5gs-webui:2.7.0"
+  webuiImage: "docker.io/gradiant/open5gs-webui:2.7.4"
   mongoDBVersion: "5.0.10-debian-11-r3"
   amf:
     enabled: true
