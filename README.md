@@ -108,8 +108,8 @@ A complete demo with UERANSIM is available at [this link](https://gradiant.githu
 3. By default, service accounts are not created. To create a service account, set the `serviceAccount` field to `true` in the CR for the desired component.
 4. By default, components with metrics support have metrics enabled (AMF, PCF, UPF). To disable metrics, set the `metrics` field to `false` in the CR for the desired component.
 5. By default, components use the `ClusterIP` service type. To change the service type, set the `serviceType` field to `LoadBalancer` or `NodePort` in the CR for the desired component. This option is currently available for the `amf-ngap`, `smf-pfcp`, `upf-pfcp`, and `upf-gtpu` services.
-6. The `open5gsImage` field in the CR specifies the version of the Open5GS images. If not specified, the operator defaults to version `docker.io/gradiant/open5gs:2.7.4`.
-7. The `webuiImage` field in the CR specifies the version of the Open5GS WebUI image. If not specified, the operator defaults to version `docker.io/gradiant/open5gs-webui:2.7.4`.
+6. The `open5gsImage` field in the CR specifies the version of the Open5GS images. If not specified, the operator defaults to version `docker.io/gradiant/open5gs:2.7.5`.
+7. The `webuiImage` field in the CR specifies the version of the Open5GS WebUI image. If not specified, the operator defaults to version `docker.io/gradiant/open5gs-webui:2.7.5`.
 8. The `mongoDBVersion` field in the CR specifies the version of the MongoDB image. If not specified, the operator defaults to version `bitnami/mongodb:8.0.6-debian-12-r0`.
 9. Components with metric support can generate a `ServiceMonitor` CR to expose metrics to Prometheus. However, ensure that the `ServiceMonitor` CRD is installed in the cluster; otherwise, the operator will encounter an error and fail to create the resource. To create a ServiceMonitor, set the `serviceMonitor` field to `true` in the CR for the desired component.
 
