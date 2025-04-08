@@ -7,8 +7,8 @@ metadata:
   name: open5gs-sample
   namespace: default
 spec:
-  open5gsImage: "docker.io/gradiant/open5gs:2.7.4"
-  webuiImage: "docker.io/gradiant/open5gs-webui:2.7.4"
+  open5gsImage: "docker.io/gradiant/open5gs:2.7.5"
+  webuiImage: "docker.io/gradiant/open5gs-webui:2.7.5"
   mongoDBVersion: "bitnami/mongodb:8.0.6-debian-12-r0"
   amf:
     enabled: true
