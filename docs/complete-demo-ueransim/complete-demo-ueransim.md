@@ -4,7 +4,7 @@ In this demo it is shown how to deploy an Open5GS instance and create several us
 
 The operator is deployed using the following command:
 ```bash
-helm install open5gs-operator oci://registry-1.docker.io/gradiantcharts/open5gs-operator --version 1.0.2
+helm install open5gs-operator oci://registry-1.docker.io/gradiantcharts/open5gs-operator --version 1.0.3
 ```
 To observe the logs of the operator:
 ```bash
