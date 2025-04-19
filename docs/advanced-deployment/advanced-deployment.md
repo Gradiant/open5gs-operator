@@ -18,9 +18,9 @@ metadata:
     app.kubernetes.io/managed-by: kustomize
   name: open5gs-sample
 spec:
-  open5gsImage: "docker.io/gradiant/open5gs:2.7.4"
-  webuiImage: "docker.io/gradiant/open5gs-webui:2.7.4"
-  mongoDBVersion: "5.0.10-debian-11-r3"
+  open5gsImage: "docker.io/gradiant/open5gs:2.7.5"
+  webuiImage: "docker.io/gradiant/open5gs-webui:2.7.5"
+  mongoDBVersion: "bitnami/mongodb:8.0.6-debian-12-r0"
   amf:
     enabled: true
     serviceAccount: true
@@ -91,8 +91,8 @@ kubectl apply -f open5gs-advanced-deployment.yaml
 
 ### 1.1 Explanation of Configurable Fields
 
-- **`open5gsImage` & `webuiImage`**: Define the Open5GS and WebUI image versions. Defaults to `docker.io/gradiant/open5gs:2.7.4`.
-- **`mongoDBVersion`**: Specifies the MongoDB version used. Default is `5.0.10-debian-11-r3`.
+- **`open5gsImage` & `webuiImage`**: Define the Open5GS and WebUI image versions. Defaults to `docker.io/gradiant/open5gs:2.7.5`.
+- **`mongoDBVersion`**: Specifies the MongoDB version used. Default is `bitnami/mongodb:8.0.6-debian-12-r0`.
 - **`enabled`**: Activates or deactivates an Open5GS component. Essential components are enabled by default.
 - **`serviceAccount`**: Determines whether a component has a dedicated Kubernetes Service Account.
 - **`metrics` & `serviceMonitor`**: Enable Prometheus monitoring. Defaults: `metrics` enabled for AMF, PCF, SMF, and UPF; `serviceMonitor` disabled.
@@ -114,9 +114,9 @@ metadata:
     app.kubernetes.io/managed-by: kustomize
   name: open5gs-sample
 spec:
-  open5gsImage: "docker.io/gradiant/open5gs:2.7.4"
-  webuiImage: "docker.io/gradiant/open5gs-webui:2.7.4"
-  mongoDBVersion: "5.0.10-debian-11-r3"
+  open5gsImage: "docker.io/gradiant/open5gs:2.7.5"
+  webuiImage: "docker.io/gradiant/open5gs-webui:2.7.5"
+  mongoDBVersion: "bitnami/mongodb:8.0.6-debian-12-r0"
   amf:
     enabled: true
     serviceAccount: true
