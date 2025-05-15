@@ -242,7 +242,7 @@ var _ = Describe("controller", Ordered, func() {
 				cmd = exec.Command(
 					"kubectl", "exec", "deployment/open5gs-test-mongodb", "-n", namespace,
 					"--", "sh", "-c",
-					fmt.Sprintf(`mongo open5gs --eval 'db.subscribers.find({"imsi": "%s"}).pretty()'`, user.IMSI),
+					fmt.Sprintf(`mongosh open5gs --eval 'db.subscribers.find({"imsi": "%s"}).pretty()'`, user.IMSI),
 				)
 				output, err := utils.Run(cmd)
 				Expect(err).NotTo(HaveOccurred(), fmt.Sprintf("Failed to query MongoDB for user %s: %s", user.Name, err))
@@ -273,7 +273,7 @@ var _ = Describe("controller", Ordered, func() {
 				cmd = exec.Command(
 					"kubectl", "exec", "deployment/open5gs-test-mongodb", "-n", namespace,
 					"--", "sh", "-c",
-					fmt.Sprintf(`mongo open5gs --eval 'db.subscribers.find({"imsi": "%s"}).pretty()'`, user.IMSI),
+					fmt.Sprintf(`mongosh open5gs --eval 'db.subscribers.find({"imsi": "%s"}).pretty()'`, user.IMSI),
 				)
 				output, err := utils.Run(cmd)
 				Expect(err).NotTo(HaveOccurred(), fmt.Sprintf("Failed to query MongoDB for user %s: %s", user.Name, err))
@@ -353,7 +353,7 @@ var _ = Describe("controller", Ordered, func() {
 				cmd = exec.Command(
 					"kubectl", "exec", "deployment/open5gs-test-2-mongodb", "-n", namespace,
 					"--", "sh", "-c",
-					fmt.Sprintf(`mongo open5gs --eval 'db.subscribers.find({"imsi": "%s"}).pretty()'`, user.IMSI),
+					fmt.Sprintf(`mongosh open5gs --eval 'db.subscribers.find({"imsi": "%s"}).pretty()'`, user.IMSI),
 				)
 				output, err := utils.Run(cmd)
 				Expect(err).NotTo(HaveOccurred(), fmt.Sprintf("Failed to query MongoDB for user %s: %s", user.Name, err))
@@ -371,7 +371,7 @@ var _ = Describe("controller", Ordered, func() {
 				cmd = exec.Command(
 					"kubectl", "exec", "deployment/open5gs-test-mongodb", "-n", namespace,
 					"--", "sh", "-c",
-					fmt.Sprintf(`mongo open5gs --eval 'db.subscribers.find({"imsi": "%s"}).pretty()'`, user.IMSI),
+					fmt.Sprintf(`mongosh open5gs --eval 'db.subscribers.find({"imsi": "%s"}).pretty()'`, user.IMSI),
 				)
 				output, err := utils.Run(cmd)
 				Expect(err).NotTo(HaveOccurred(), fmt.Sprintf("Failed to query MongoDB for user %s: %s", user.Name, err))
@@ -451,7 +451,7 @@ var _ = Describe("controller", Ordered, func() {
 				cmd = exec.Command(
 					"kubectl", "exec", "deployment/open5gs-test-2-mongodb", "-n", namespace2,
 					"--", "sh", "-c",
-					fmt.Sprintf(`mongo open5gs --eval 'db.subscribers.find({"imsi": "%s"}).pretty()'`, user.IMSI),
+					fmt.Sprintf(`mongosh open5gs --eval 'db.subscribers.find({"imsi": "%s"}).pretty()'`, user.IMSI),
 				)
 				output, err := utils.Run(cmd)
 				Expect(err).NotTo(HaveOccurred(), fmt.Sprintf("Failed to query MongoDB for user %s: %s", user.Name, err))
@@ -469,7 +469,7 @@ var _ = Describe("controller", Ordered, func() {
 				cmd = exec.Command(
 					"kubectl", "exec", "deployment/open5gs-test-2-mongodb", "-n", namespace2,
 					"--", "sh", "-c",
-					fmt.Sprintf(`mongo open5gs --eval 'db.subscribers.find({"imsi": "%s"}).pretty()'`, user.IMSI),
+					fmt.Sprintf(`mongosh open5gs --eval 'db.subscribers.find({"imsi": "%s"}).pretty()'`, user.IMSI),
 				)
 				output, err := utils.Run(cmd)
 				Expect(err).NotTo(HaveOccurred(), fmt.Sprintf("Failed to query MongoDB for user %s: %s", user.Name, err))
