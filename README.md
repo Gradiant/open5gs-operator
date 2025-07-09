@@ -29,9 +29,9 @@ The operator provides full management of Open5GS subscribers, including configur
 
 ## How to Install
 
-To install by using Helm, you can use the Helm chart provided in the `charts` directory or the open5gs-operator-1.0.1.tgz file. The chart is also available in the Gradiant Charts repository.
+To install by using Helm, you can use the Helm chart provided in the `charts` directory or the open5gs-operator-1.0.4.tgz file. The chart is also available in the Gradiant Charts repository.
 ```bash
-helm install open5gs-operator oci://registry-1.docker.io/gradiantcharts/open5gs-operator --version 1.0.1
+helm install open5gs-operator oci://registry-1.docker.io/gradiantcharts/open5gs-operator --version 1.0.4
 ```
 
 To uninstall the operator, run:
@@ -112,4 +112,6 @@ A complete demo with UERANSIM is available at [this link](https://gradiant.githu
 7. The `webuiImage` field in the CR specifies the version of the Open5GS WebUI image. If not specified, the operator defaults to version `docker.io/gradiant/open5gs-webui:2.7.5`.
 8. The `mongoDBVersion` field in the CR specifies the version of the MongoDB image. If not specified, the operator defaults to version `bitnami/mongodb:8.0.6-debian-12-r0`.
 9. Components with metric support can generate a `ServiceMonitor` CR to expose metrics to Prometheus. However, ensure that the `ServiceMonitor` CRD is installed in the cluster; otherwise, the operator will encounter an error and fail to create the resource. To create a ServiceMonitor, set the `serviceMonitor` field to `true` in the CR for the desired component.
+10. **UPF Deployment Annotations:** The annotations for the UPF Deployment are managed exclusively through the `upf.deploymentAnnotations` field in the CR. Any annotation not present in this field will be automatically reconciled by the operator (added or removed as needed), so manual changes to annotations will not persist unless reflected in the CR.
+11. **UPF GTP-U Interface:** The GTP-U network interface used by the UPF is set via the `upf.gtpuDev` field in the CR (e.g., `gtpuDev: "eth0"`). By default, the UPF uses the `eth0` interface.
 

@@ -1,0 +1,103 @@
+dbURI: "mongodb://{{ .Release.Name }}-mongodb/open5gs"
+
+populate:
+  enabled: true
+  image:
+    registry: docker.io
+    repository: gradiant/open5gs-dbctl
+    tag: 0.10.3
+    pullPolicy: IfNotPresent
+  initCommands:
+    - open5gs-dbctl add_ue_with_slice 999700000053411 02366BDEC178628BC809841190A3F316 4BDB2D50BA9AFEC95D62928620EF6D34 internet 1 1b207
+  # example of initCommands:
+  #  - open5gs-dbctl add 999700000000001 465B5CE8B199B49FAA5F0A2EE238A6BC E8ED289DEBA952E4283B54E88E6183CA
+  #  - open5gs-dbctl add_ue_with_apn 999700000000002 465B5CE8B199B49FAA5F0A2EE238A6BC E8ED289DEBA952E4283B54E88E6183CA internet
+  #  - open5gs-dbctl add_ue_with_slice 999700000000003 465B5CE8B199B49FAA5F0A2EE238A6BC E8ED289DEBA952E4283B54E88E6183CA internet 1 111111
+
+# Common
+mongodb:
+  enabled: true
+  auth:
+    enabled: false
+smf:
+  enabled: true
+  config:
+    pcrf:
+      enabled: false
+upf:
+  enabled: true
+  config:
+    upf:
+      gtpu:
+        dev: net1
+  podAnnotations:
+    k8s.v1.cni.cncf.io/networks: upf-dataplane
+  nodeSelector:
+    kubernetes.io/hostname: solidsnake
+  containerSecurityContext:
+    enabled: true
+    runAsUser: 0
+    runAsGroup: 0
+webui:
+  enabled: true
+
+# 4G
+hss:
+  enabled: false
+mme:
+  enabled: false
+pcrf:
+  enabled: false
+sgwc:
+  enabled: false
+sgwu:
+  enabled: false
+
+# 5G
+amf:
+  enabled: true
+  config:
+    plmnList:
+      - plmn_id:
+          mcc: "999"
+          mnc: "70"
+        s_nssai:
+          - sst: 1
+            sd: "111111"
+          - sst: 1
+            sd: "01b207"
+  services:
+    ngap:
+      type: LoadBalancer
+ausf:
+  enabled: true
+bsf:
+  enabled: true
+nrf:
+  enabled: true
+nssf:
+  enabled: true
+  config:
+    nsiList:
+    - uri: ""
+      sst: 1
+      sd: "111111"
+    - uri: ""
+      sst: 1
+      sd: "01b207"
+pcf:
+  enabled: true
+  mongodb:
+    enabled: false
+scp:
+  enabled: true
+  mongodb:
+    enabled: false
+sepp:
+  enabled: false
+udm:
+  enabled: true
+udr:
+  enabled: true
+ 
+# helm install open5gs oci://registry-1.docker.io/gradiantcharts/open5gs --version 2.2.9 --values values.yaml 

@@ -46,11 +46,13 @@ type Open5GSSlice struct {
 }
 
 type Open5GSFunction struct {
-	Enabled        *bool            `json:"enabled,omitempty" default:"true"`
-	ServiceAccount *bool            `json:"serviceAccount,omitempty" default:"false"`
-	Metrics        *bool            `json:"metrics,omitempty" default:"true"`
-	ServiceMonitor *bool            `json:"serviceMonitor,omitempty" default:"false"`
-	Service        []Open5GSService `json:"service,omitempty" default:"{\"name\":\"\",\"port\":0,\"serviceType\":\"\"}"`
+	Enabled               *bool             `json:"enabled,omitempty" default:"true"`
+	ServiceAccount        *bool             `json:"serviceAccount,omitempty" default:"false"`
+	Metrics               *bool             `json:"metrics,omitempty" default:"true"`
+	ServiceMonitor        *bool             `json:"serviceMonitor,omitempty" default:"false"`
+	Service               []Open5GSService  `json:"service,omitempty" default:"{\"name\":\"\",\"port\":0,\"serviceType\":\"\"}"`
+	GTPUDev               string            `json:"gtpuDev,omitempty" default:"eth0"`
+	DeploymentAnnotations map[string]string `json:"deploymentAnnotations,omitempty"`
 }
 
 type Open5GSService struct {
