@@ -1,0 +1,93 @@
+name: Build and Publish Docker Image & Helm Chart
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build-and-publish:
+    runs-on: ubuntu-latest
+    env:
+      IMAGE_NAME: gradiant/open5gs-operator
+      CHART_PATH: charts/open5gs-operator
+      CHART_REPO: oci://registry-1.docker.io/gradiantcharts
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to DockerHub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Extract version from Makefile
+        id: version
+        run: |
+          VERSION=$(grep -E '^VERSION[[:space:]]*\?=' Makefile | head -1 | sed 's/.*= *//')
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+      - name: Build Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: false
+          tags: ${{ env.IMAGE_NAME }}:latest,${{ env.IMAGE_NAME }}:${{ steps.version.outputs.version }}
+
+      - name: Push Docker image
+        if: github.event_name == 'push'
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: ${{ env.IMAGE_NAME }}:latest,${{ env.IMAGE_NAME }}:${{ steps.version.outputs.version }}
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: 'go.mod'
+
+      - name: Install Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: v3.18.4
+
+      - name: Lint Helm chart
+        run: helm lint $CHART_PATH
+
+      - name: Update Helm dependencies
+        run: helm dep update $CHART_PATH
+
+      - name: Generate Helm chart
+        run: |
+          make helm
+
+      - name: Package Helm chart
+        run: |
+          helm package $CHART_PATH --destination packaged-charts
+
+      - name: Helm registry login (DockerHub)
+        if: github.event_name == 'push'
+        run: |
+          echo ${{ secrets.DOCKERHUB_TOKEN }} | helm registry login registry-1.docker.io -u ${{ secrets.DOCKERHUB_USERNAME }} --password-stdin
+
+      - name: Push Helm chart to DockerHub OCI registry
+        if: github.event_name == 'push'
+        run: |
+          helm push packaged-charts/open5gs-operator-${{ steps.version.outputs.version }}.tgz $CHART_REPO
+
+      - name: Upload Helm chart as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: open5gs-operator-chart
+          path: packaged-charts/*.tgz

@@ -115,3 +115,17 @@ A complete demo with UERANSIM is available at [this link](https://gradiant.githu
 10. **UPF Deployment Annotations:** The annotations for the UPF Deployment are managed exclusively through the `upf.deploymentAnnotations` field in the CR. Any annotation not present in this field will be automatically reconciled by the operator (added or removed as needed), so manual changes to annotations will not persist unless reflected in the CR.
 11. **UPF GTP-U Interface:** The GTP-U network interface used by the UPF is set via the `upf.gtpuDev` field in the CR (e.g., `gtpuDev: "eth0"`). By default, the UPF uses the `eth0` interface.
 
+## How to create a new release
+
+To publish a new version of the operator, follow these steps:
+
+1. Make the necessary changes in the code.
+2. Run the version script:
+   ```bash
+   ./set-version.sh <new_version>
+   ```
+   This will update the version in all relevant files (Makefile, kustomization.yaml, Chart.yaml, and values.yaml).
+3. Commit the changes and create the corresponding Pull Request (PR).
+
+This ensures that the published version is consistent with the code and manifests.
+

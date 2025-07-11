@@ -1,0 +1,29 @@
+name: Lint Helm Chart
+
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+
+jobs:
+  lint-helm:
+    runs-on: ubuntu-latest
+    env:
+      CHART_PATH: charts/open5gs-operator
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: v3.18.4
+
+      - name: Lint Helm chart
+        run: helm lint $CHART_PATH
+
+      - name: Update Helm dependencies
+        run: helm dep update $CHART_PATH
