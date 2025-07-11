@@ -29,9 +29,9 @@ The operator provides full management of Open5GS subscribers, including configur
 
 ## How to Install
 
-To install by using Helm, you can use the Helm chart provided in the `charts` directory or the open5gs-operator-1.0.4.tgz file. The chart is also available in the Gradiant Charts repository.
+To install by using Helm, you can use the Helm chart provided in the `charts` directory or the open5gs-operator-x.x.x.tgz file. The chart is also available in the Gradiant Charts repository.
 ```bash
-helm install open5gs-operator oci://registry-1.docker.io/gradiantcharts/open5gs-operator --version 1.0.4
+helm install open5gs-operator oci://registry-1.docker.io/gradiantcharts/open5gs-operator
 ```
 
 To uninstall the operator, run:

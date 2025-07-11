@@ -44,19 +44,19 @@ var _ = Describe("controller", Ordered, func() {
 			var controllerPodName string
 			var err error
 
-			var projectimage = "gradiant/open5gs-operator:1.0.4"
+			var projectimage = "gradiant/open5gs-operator:dev"
 
-			// By("building the manager(Operator) image")
-			// cmd := exec.Command("make", "docker-build", fmt.Sprintf("IMG=%s", projectimage))
-			// _, err = utils.Run(cmd)
-			// ExpectWithOffset(1, err).NotTo(HaveOccurred())
+			By("building the manager(Operator) image")
+			cmd := exec.Command("make", "docker-build", fmt.Sprintf("IMG=%s", projectimage))
+			_, err = utils.Run(cmd)
+			ExpectWithOffset(1, err).NotTo(HaveOccurred())
 
-			// By("loading the the manager(Operator) image on Kind")
-			// err = utils.LoadImageToKindClusterWithName(projectimage)
-			// ExpectWithOffset(1, err).NotTo(HaveOccurred())
+			By("loading the the manager(Operator) image on Kind")
+			err = utils.LoadImageToKindClusterWithName(projectimage)
+			ExpectWithOffset(1, err).NotTo(HaveOccurred())
 
 			By("installing CRDs")
-			cmd := exec.Command("make", "install")
+			cmd = exec.Command("make", "install")
 			_, err = utils.Run(cmd)
 			ExpectWithOffset(1, err).NotTo(HaveOccurred())
 
