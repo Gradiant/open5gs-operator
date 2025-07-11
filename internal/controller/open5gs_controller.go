@@ -754,7 +754,8 @@ func (r *Open5GSReconciler) reconcileUDR(ctx context.Context, req ctrl.Request, 
 
 func (r *Open5GSReconciler) reconcileUPF(ctx context.Context, req ctrl.Request, open5gs *netv1.Open5GS, logger logr.Logger) error {
 	componentName := "UPF"
-	configMap := CreateUPFConfigMap(req.Namespace, open5gs.Name, open5gs.Spec.Configuration, *open5gs.Spec.UPF.Metrics)
+	gtpuDev := open5gs.Spec.UPF.GTPUDev
+	configMap := CreateUPFConfigMap(req.Namespace, open5gs.Name, open5gs.Spec.Configuration, *open5gs.Spec.UPF.Metrics, gtpuDev)
 	entrypointConfigMap := CreateUPFEntrypointConfigMap(req.Namespace, open5gs.Name)
 
 	envVars := []corev1.EnvVar{}
@@ -794,7 +795,7 @@ func (r *Open5GSReconciler) reconcileUPF(ctx context.Context, req ctrl.Request, 
 		serviceAccount = CreateServiceAccount(req.Namespace, open5gs.Name, componentName)
 		serviceAccountName = serviceAccount.Name
 	}
-	deployment := CreateUPFDeployment(req.Namespace, open5gs.Name, open5gs.Spec.Open5GSImage, envVars, *open5gs.Spec.UPF.Metrics, serviceAccountName)
+	deployment := CreateUPFDeployment(req.Namespace, open5gs.Name, open5gs.Spec.Open5GSImage, envVars, *open5gs.Spec.UPF.Metrics, serviceAccountName, open5gs.Spec.UPF.DeploymentAnnotations)
 	return r.reconcileComponent(ctx, open5gs, componentName, logger, configMap, deployment, services, serviceMonitor, serviceAccount)
 }
 
@@ -987,6 +988,52 @@ func reconcileDeployment(ctx context.Context, r *Open5GSReconciler, open5gs *net
 		}
 	} else {
 		if !hasOwnerReference(foundDeployment, open5gs) {
+			return nil
+		}
+
+		upfDeploymentName := open5gs.Name + "-upf"
+		if foundDeployment.Name == upfDeploymentName {
+			allowedAnnotations := map[string]struct{}{"open5gs/configmap-hash": {}}
+			if open5gs.Spec.UPF.DeploymentAnnotations != nil {
+				for k := range open5gs.Spec.UPF.DeploymentAnnotations {
+					allowedAnnotations[k] = struct{}{}
+				}
+			}
+
+			newAnnotations := make(map[string]string)
+			newAnnotations["open5gs/configmap-hash"] = configMapHash
+			if open5gs.Spec.UPF.DeploymentAnnotations != nil {
+				for k, v := range open5gs.Spec.UPF.DeploymentAnnotations {
+					newAnnotations[k] = v
+				}
+			}
+
+			current := foundDeployment.Spec.Template.Annotations
+			needUpdate := false
+			if len(current) != len(newAnnotations) {
+				needUpdate = true
+			} else {
+				for k, v := range newAnnotations {
+					if current[k] != v {
+						needUpdate = true
+						break
+					}
+				}
+				for k := range current {
+					if _, ok := newAnnotations[k]; !ok {
+						needUpdate = true
+						break
+					}
+				}
+			}
+			if needUpdate {
+				foundDeployment.Spec.Template.Annotations = newAnnotations
+				if err := r.Client.Update(ctx, foundDeployment); err != nil {
+					logger.Error(err, "Failed to update UPF Deployment annotations", "component", componentName)
+					return err
+				}
+				logger.Info("UPF Deployment annotations reconciled", "component", componentName)
+			}
 			return nil
 		}
 
@@ -1315,6 +1362,9 @@ func setDefaultValues(open5gs *netv1.Open5GS) {
 	if open5gs.Spec.WebUI.ServiceAccount == nil {
 		defaultWebUIServiceAccount := false
 		open5gs.Spec.WebUI.ServiceAccount = &defaultWebUIServiceAccount
+	}
+	if open5gs.Spec.UPF.GTPUDev == "" {
+		open5gs.Spec.UPF.GTPUDev = "eth0"
 	}
 
 }

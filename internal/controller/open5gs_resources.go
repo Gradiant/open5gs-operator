@@ -572,7 +572,7 @@ udr:
 	}
 }
 
-func CreateUPFConfigMap(namespace, open5gsName string, configuration netv1.Open5GSConfiguration, metrics bool) *corev1.ConfigMap {
+func CreateUPFConfigMap(namespace, open5gsName string, configuration netv1.Open5GSConfiguration, metrics bool, gtpuDev string) *corev1.ConfigMap {
 	metricsConfig := `
   `
 	if metrics {
@@ -581,6 +581,9 @@ func CreateUPFConfigMap(namespace, open5gsName string, configuration netv1.Open5
    server:
    - dev: eth0
      port: 9090`
+	}
+	if gtpuDev == "" {
+		gtpuDev = "eth0"
 	}
 	return &corev1.ConfigMap{
 		ObjectMeta: metav1.ObjectMeta{
@@ -603,8 +606,7 @@ upf:
     client:
   gtpu:
     server:
-    - dev: eth0` +
-				metricsConfig + `
+    - dev: ` + gtpuDev + metricsConfig + `
   session:
     -
       dev: ogstun
@@ -652,7 +654,7 @@ $@
 	}
 }
 
-func CreateUPFDeployment(namespace, open5gsName, image string, envVars []corev1.EnvVar, metrics bool, serviceAccountName string) *appsv1.Deployment {
+func CreateUPFDeployment(namespace, open5gsName, image string, envVars []corev1.EnvVar, metrics bool, serviceAccountName string, deploymentAnnotations map[string]string) *appsv1.Deployment {
 	var ports []corev1.ContainerPort
 	if metrics {
 		ports = []corev1.ContainerPort{
@@ -712,6 +714,7 @@ func CreateUPFDeployment(namespace, open5gsName, image string, envVars []corev1.
 						"app.kubernetes.io/instance": open5gsName,
 						"app.kubernetes.io/name":     "upf",
 					},
+					Annotations: deploymentAnnotations,
 				},
 				Spec: corev1.PodSpec{
 					ServiceAccountName: serviceAccountName,

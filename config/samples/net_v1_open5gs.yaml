@@ -60,6 +60,9 @@ spec:
     metrics: true
     serviceMonitor: true
     serviceAccount: true
+    deploymentAnnotations:
+      k8s.v1.cni.cncf.io/networks: upf-dataplane-5
+    gtpuDev: "eth0"
     service:
       - name: pfcp
         serviceType: ClusterIP

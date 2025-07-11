@@ -41,8 +41,14 @@ spec:
             properties:
               amf:
                 properties:
+                  deploymentAnnotations:
+                    additionalProperties:
+                      type: string
+                    type: object
                   enabled:
                     type: boolean
+                  gtpuDev:
+                    type: string
                   metrics:
                     type: boolean
                   service:
@@ -61,8 +67,14 @@ spec:
                 type: object
               ausf:
                 properties:
+                  deploymentAnnotations:
+                    additionalProperties:
+                      type: string
+                    type: object
                   enabled:
                     type: boolean
+                  gtpuDev:
+                    type: string
                   metrics:
                     type: boolean
                   service:
@@ -81,8 +93,14 @@ spec:
                 type: object
               bsf:
                 properties:
+                  deploymentAnnotations:
+                    additionalProperties:
+                      type: string
+                    type: object
                   enabled:
                     type: boolean
+                  gtpuDev:
+                    type: string
                   metrics:
                     type: boolean
                   service:
@@ -123,8 +141,14 @@ spec:
                 type: object
               mongoDB:
                 properties:
+                  deploymentAnnotations:
+                    additionalProperties:
+                      type: string
+                    type: object
                   enabled:
                     type: boolean
+                  gtpuDev:
+                    type: string
                   metrics:
                     type: boolean
                   service:
@@ -145,8 +169,14 @@ spec:
                 type: string
               nrf:
                 properties:
+                  deploymentAnnotations:
+                    additionalProperties:
+                      type: string
+                    type: object
                   enabled:
                     type: boolean
+                  gtpuDev:
+                    type: string
                   metrics:
                     type: boolean
                   service:
@@ -165,8 +195,14 @@ spec:
                 type: object
               nssf:
                 properties:
+                  deploymentAnnotations:
+                    additionalProperties:
+                      type: string
+                    type: object
                   enabled:
                     type: boolean
+                  gtpuDev:
+                    type: string
                   metrics:
                     type: boolean
                   service:
@@ -187,8 +223,14 @@ spec:
                 type: string
               pcf:
                 properties:
+                  deploymentAnnotations:
+                    additionalProperties:
+                      type: string
+                    type: object
                   enabled:
                     type: boolean
+                  gtpuDev:
+                    type: string
                   metrics:
                     type: boolean
                   service:
@@ -207,8 +249,14 @@ spec:
                 type: object
               scp:
                 properties:
+                  deploymentAnnotations:
+                    additionalProperties:
+                      type: string
+                    type: object
                   enabled:
                     type: boolean
+                  gtpuDev:
+                    type: string
                   metrics:
                     type: boolean
                   service:
@@ -227,8 +275,14 @@ spec:
                 type: object
               smf:
                 properties:
+                  deploymentAnnotations:
+                    additionalProperties:
+                      type: string
+                    type: object
                   enabled:
                     type: boolean
+                  gtpuDev:
+                    type: string
                   metrics:
                     type: boolean
                   service:
@@ -247,8 +301,14 @@ spec:
                 type: object
               udm:
                 properties:
+                  deploymentAnnotations:
+                    additionalProperties:
+                      type: string
+                    type: object
                   enabled:
                     type: boolean
+                  gtpuDev:
+                    type: string
                   metrics:
                     type: boolean
                   service:
@@ -267,8 +327,14 @@ spec:
                 type: object
               udr:
                 properties:
+                  deploymentAnnotations:
+                    additionalProperties:
+                      type: string
+                    type: object
                   enabled:
                     type: boolean
+                  gtpuDev:
+                    type: string
                   metrics:
                     type: boolean
                   service:
@@ -287,8 +353,14 @@ spec:
                 type: object
               upf:
                 properties:
+                  deploymentAnnotations:
+                    additionalProperties:
+                      type: string
+                    type: object
                   enabled:
                     type: boolean
+                  gtpuDev:
+                    type: string
                   metrics:
                     type: boolean
                   service:
@@ -307,8 +379,14 @@ spec:
                 type: object
               webui:
                 properties:
+                  deploymentAnnotations:
+                    additionalProperties:
+                      type: string
+                    type: object
                   enabled:
                     type: boolean
+                  gtpuDev:
+                    type: string
                   metrics:
                     type: boolean
                   service:
