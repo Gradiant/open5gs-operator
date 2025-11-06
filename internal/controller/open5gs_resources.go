@@ -832,14 +832,14 @@ if ( cursor.count() == 0 ) {
 }
 EOF
 
-mongo $DB_URI /tmp/account.js
+mongosh $DB_URI /tmp/account.js
 rm -f /tmp/account.js
 `,
 		},
 	}
 }
 
-func CreateWebUIDeployment(namespace, open5gsName, image string, envVars []corev1.EnvVar, serviceAccountName string) *appsv1.Deployment {
+func CreateWebUIDeployment(namespace, open5gsName, image string, envVars []corev1.EnvVar, serviceAccountName string, mongoDBVersion string) *appsv1.Deployment {
 	if serviceAccountName == "" {
 		serviceAccountName = "default"
 	}
@@ -920,7 +920,7 @@ func CreateWebUIDeployment(namespace, open5gsName, image string, envVars []corev
 					InitContainers: []corev1.Container{
 						{
 							Name:  "init",
-							Image: "bitnami/mongodb:4.4.1-debian-10-r39",
+							Image: mongoDBVersion,
 							Command: []string{
 								"/bin/bash",
 								"/add_admin.sh",

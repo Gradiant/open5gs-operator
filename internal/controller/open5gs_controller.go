@@ -819,7 +819,7 @@ func (r *Open5GSReconciler) reconcileWebUI(ctx context.Context, req ctrl.Request
 		serviceAccount = CreateServiceAccount(req.Namespace, open5gs.Name, componentName)
 		serviceAccountName = serviceAccount.Name
 	}
-	deployment := CreateWebUIDeployment(req.Namespace, open5gs.Name, open5gs.Spec.WebUIImage, envVars, serviceAccountName)
+	deployment := CreateWebUIDeployment(req.Namespace, open5gs.Name, open5gs.Spec.WebUIImage, envVars, serviceAccountName, open5gs.Spec.MongoDBVersion)
 	return r.reconcileComponent(ctx, open5gs, componentName, logger, configMap, deployment, services, serviceAccount)
 }
 
@@ -1309,7 +1309,7 @@ func setDefaultValues(open5gs *netv1.Open5GS) {
 		open5gs.Spec.WebUIImage = "docker.io/gradiant/open5gs-webui:2.7.5"
 	}
 	if open5gs.Spec.MongoDBVersion == "" {
-		open5gs.Spec.MongoDBVersion = "bitnami/mongodb:8.0.6-debian-12-r0"
+		open5gs.Spec.MongoDBVersion = "bitnami/mongodb:latest"
 	}
 	if open5gs.Spec.AMF.ServiceAccount == nil {
 		defaultAMFServiceAccount := false
