@@ -5,4 +5,4 @@ kind: Kustomization
 images:
 - name: controller
   newName: gradiant/open5gs-operator
-  newTag: 1.0.4
+  newTag: 1.0.5

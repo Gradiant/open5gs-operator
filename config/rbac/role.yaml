@@ -5,57 +5,13 @@ metadata:
   name: manager-role
 rules:
 - apiGroups:
-  - apps
-  resources:
-  - deployments
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - patch
-  - update
-  - watch
-- apiGroups:
   - ""
   resources:
   - configmaps
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - patch
-  - update
-  - watch
-- apiGroups:
-  - ""
-  resources:
   - persistentvolumeclaims
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - patch
-  - update
-  - watch
-- apiGroups:
-  - ""
-  resources:
   - persistentvolumes
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - patch
-  - update
-  - watch
-- apiGroups:
-  - ""
-  resources:
   - serviceaccounts
+  - services
   verbs:
   - create
   - delete
@@ -65,9 +21,9 @@ rules:
   - update
   - watch
 - apiGroups:
-  - ""
+  - apps
   resources:
-  - services
+  - deployments
   verbs:
   - create
   - delete
@@ -92,6 +48,9 @@ rules:
   - net.gradiant.org
   resources:
   - open5gses
+  - open5gsusers
+  - open5gsusers/finalizers
+  - open5gsusers/status
   verbs:
   - create
   - delete
@@ -114,39 +73,3 @@ rules:
   - get
   - patch
   - update
-- apiGroups:
-  - net.gradiant.org
-  resources:
-  - open5gsusers
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - patch
-  - update
-  - watch
-- apiGroups:
-  - net.gradiant.org
-  resources:
-  - open5gsusers/finalizers
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - patch
-  - update
-  - watch
-- apiGroups:
-  - net.gradiant.org
-  resources:
-  - open5gsusers/status
-  verbs:
-  - create
-  - delete
-  - get
-  - list
-  - patch
-  - update
-  - watch

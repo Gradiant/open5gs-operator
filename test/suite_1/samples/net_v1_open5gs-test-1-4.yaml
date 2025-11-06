@@ -9,7 +9,7 @@ metadata:
 spec:
   open5gsImage: "docker.io/gradiant/open5gs:2.7.5"
   webuiImage: "docker.io/gradiant/open5gs-webui:2.7.5"
-  mongoDBVersion: "bitnami/mongodb:8.0.6-debian-12-r0"
+  mongoDBVersion: "bitnami/mongodb:latest"
   amf:
     enabled: true
     serviceAccount: true
