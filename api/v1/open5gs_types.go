@@ -53,6 +53,8 @@ type Open5GSFunction struct {
 	Service               []Open5GSService  `json:"service,omitempty" default:"{\"name\":\"\",\"port\":0,\"serviceType\":\"\"}"`
 	GTPUDev               string            `json:"gtpuDev,omitempty" default:"eth0"`
 	DeploymentAnnotations map[string]string `json:"deploymentAnnotations,omitempty"`
+	// Unprivileged runs the UPF without privileged:true/root (UPF only).
+	Unprivileged *bool `json:"unprivileged,omitempty" default:"false"`
 }
 
 type Open5GSService struct {

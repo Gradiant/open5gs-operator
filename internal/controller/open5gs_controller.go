@@ -755,8 +755,9 @@ func (r *Open5GSReconciler) reconcileUDR(ctx context.Context, req ctrl.Request, 
 func (r *Open5GSReconciler) reconcileUPF(ctx context.Context, req ctrl.Request, open5gs *netv1.Open5GS, logger logr.Logger) error {
 	componentName := "UPF"
 	gtpuDev := open5gs.Spec.UPF.GTPUDev
+	unprivileged := open5gs.Spec.UPF.Unprivileged != nil && *open5gs.Spec.UPF.Unprivileged
 	configMap := CreateUPFConfigMap(req.Namespace, open5gs.Name, open5gs.Spec.Configuration, *open5gs.Spec.UPF.Metrics, gtpuDev)
-	entrypointConfigMap := CreateUPFEntrypointConfigMap(req.Namespace, open5gs.Name)
+	entrypointConfigMap := CreateUPFEntrypointConfigMap(req.Namespace, open5gs.Name, unprivileged)
 
 	envVars := []corev1.EnvVar{}
 	pfcpService := netv1.Open5GSService{Name: "pfcp"}
@@ -795,7 +796,7 @@ func (r *Open5GSReconciler) reconcileUPF(ctx context.Context, req ctrl.Request, 
 		serviceAccount = CreateServiceAccount(req.Namespace, open5gs.Name, componentName)
 		serviceAccountName = serviceAccount.Name
 	}
-	deployment := CreateUPFDeployment(req.Namespace, open5gs.Name, open5gs.Spec.Open5GSImage, envVars, *open5gs.Spec.UPF.Metrics, serviceAccountName, open5gs.Spec.UPF.DeploymentAnnotations)
+	deployment := CreateUPFDeployment(req.Namespace, open5gs.Name, open5gs.Spec.Open5GSImage, envVars, *open5gs.Spec.UPF.Metrics, serviceAccountName, open5gs.Spec.UPF.DeploymentAnnotations, unprivileged)
 	return r.reconcileComponent(ctx, open5gs, componentName, logger, configMap, deployment, services, serviceMonitor, serviceAccount)
 }
 
@@ -1270,6 +1271,10 @@ func setDefaultValues(open5gs *netv1.Open5GS) {
 	if open5gs.Spec.UPF.ServiceMonitor == nil {
 		defaultUPFServiceMonitor := true
 		open5gs.Spec.UPF.ServiceMonitor = &defaultUPFServiceMonitor
+	}
+	if open5gs.Spec.UPF.Unprivileged == nil {
+		defaultUPFUnprivileged := false
+		open5gs.Spec.UPF.Unprivileged = &defaultUPFUnprivileged
 	}
 	if open5gs.Spec.WebUI.Enabled == nil {
 		defaultWebUIEnabled := false
