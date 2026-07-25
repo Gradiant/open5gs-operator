@@ -785,12 +785,26 @@ func CreateUPFDeployment(namespace, open5gsName, image string, envVars []corev1.
 	podSecurityContext := &corev1.PodSecurityContext{
 		FSGroup: int64Ptr(1001),
 	}
+	mainCommand := []string(nil)
+	mainArgs := []string{"open5gs-upfd"}
 
 	if unprivileged {
 		// Main container: no capabilities at all. It only attaches to the
 		// persistent, already-owned TUN device the init container created -
 		// Linux doesn't require CAP_NET_ADMIN to attach to a TUN device the
 		// calling UID already owns, only to create one.
+		//
+		// Neither container sets seLinuxOptions here even though SELinux-
+		// enforcing nodes (e.g. RHCOS/OpenShift) require type spc_t for tun
+		// device access (the default container_t domain has no policy
+		// allowing chr_file access to devices of type tun_tap_device_t,
+		// regardless of capabilities or UID) - the level half of that pair is
+		// namespace-specific (SCC MustRunAs auto-assigns it per project) and
+		// can't be hardcoded here. Setting only Type at the container level
+		// without a matching Level fails SCC validation outright. This is
+		// left entirely to the bound SCC's own seLinuxContext default
+		// instead (see the open5gs-upf-unprivileged SCC in the deployment
+		// examples), which fills in both consistently.
 		mainSecurityContext = &corev1.SecurityContext{
 			Capabilities: &corev1.Capabilities{
 				Drop: []corev1.Capability{"ALL"},
@@ -800,6 +814,15 @@ func CreateUPFDeployment(namespace, open5gsName, image string, envVars []corev1.
 			RunAsUser:    int64Ptr(1001),
 			RunAsGroup:   int64Ptr(1001),
 		}
+		// The image's own default entrypoint (/entrypoint.sh, invoked
+		// implicitly since no Command is set) redundantly redoes the same
+		// tun/NAT/sysctl setup the init container already did, unconditionally,
+		// every time its Args match "open5gs-upfd" - requiring the same
+		// elevated privileges the main container is specifically trying to
+		// avoid here. Bypassing it and invoking the real binary directly
+		// skips that redundant (and here, privileged-only) work entirely.
+		mainCommand = []string{"/opt/open5gs/bin/open5gs-upfd"}
+		mainArgs = []string{"-c", "/opt/open5gs/etc/open5gs/upf.yaml"}
 		// Init container: root (not privileged) so CAP_NET_ADMIN is actually
 		// effective - Kubernetes does not set ambient/inheritable capabilities
 		// for non-root containers, so a non-root container requesting
@@ -873,7 +896,8 @@ func CreateUPFDeployment(namespace, open5gsName, image string, envVars []corev1.
 						{
 							Name:            "open5gs-upf",
 							Image:           image,
-							Args:            []string{"open5gs-upfd"},
+							Command:         mainCommand,
+							Args:            mainArgs,
 							Ports:           ports,
 							Env:             envVars,
 							VolumeMounts:    mainVolumeMounts,

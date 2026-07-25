@@ -24,6 +24,13 @@ func TestCreateUPFDeploymentDefaultUnchanged(t *testing.T) {
 		t.Error("expected main container RunAsUser=0 when unprivileged=false")
 	}
 
+	if len(main.Command) != 0 {
+		t.Error("expected no Command override on main container when unprivileged=false")
+	}
+	if len(main.Args) != 1 || main.Args[0] != "open5gs-upfd" {
+		t.Error("expected main container Args to be unchanged (open5gs-upfd) when unprivileged=false")
+	}
+
 	init := dep.Spec.Template.Spec.InitContainers[0]
 	if init.SecurityContext.Privileged == nil || !*init.SecurityContext.Privileged {
 		t.Error("expected init container Privileged=true when unprivileged=false")
@@ -58,6 +65,15 @@ func TestCreateUPFDeploymentUnprivileged(t *testing.T) {
 	if len(main.SecurityContext.Capabilities.Drop) != 1 || main.SecurityContext.Capabilities.Drop[0] != "ALL" {
 		t.Error("expected main container to drop ALL capabilities when unprivileged=true")
 	}
+	if main.SecurityContext.SELinuxOptions != nil {
+		t.Error("expected no explicit seLinuxOptions on main container - left to the bound SCC's own default")
+	}
+	if len(main.Command) != 1 || main.Command[0] != "/opt/open5gs/bin/open5gs-upfd" {
+		t.Error("expected main container Command to bypass the image's own entrypoint wrapper when unprivileged=true")
+	}
+	if len(main.Args) != 2 || main.Args[0] != "-c" || main.Args[1] != "/opt/open5gs/etc/open5gs/upf.yaml" {
+		t.Error("expected main container Args to pass the config path directly when unprivileged=true")
+	}
 
 	init := dep.Spec.Template.Spec.InitContainers[0]
 	if init.SecurityContext.Privileged == nil || *init.SecurityContext.Privileged {
@@ -68,6 +84,9 @@ func TestCreateUPFDeploymentUnprivileged(t *testing.T) {
 	}
 	if len(init.SecurityContext.Capabilities.Add) != 1 || init.SecurityContext.Capabilities.Add[0] != "NET_ADMIN" {
 		t.Error("expected init container to add only NET_ADMIN when unprivileged=true")
+	}
+	if init.SecurityContext.SELinuxOptions != nil {
+		t.Error("expected no explicit seLinuxOptions on init container - left to the bound SCC's own default")
 	}
 
 	foundTunVolume := false
