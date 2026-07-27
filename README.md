@@ -114,6 +114,7 @@ A complete demo with UERANSIM is available at [this link](https://gradiant.githu
 9. Components with metric support can generate a `ServiceMonitor` CR to expose metrics to Prometheus. However, ensure that the `ServiceMonitor` CRD is installed in the cluster; otherwise, the operator will encounter an error and fail to create the resource. To create a ServiceMonitor, set the `serviceMonitor` field to `true` in the CR for the desired component.
 10. **UPF Deployment Annotations:** The annotations for the UPF Deployment are managed exclusively through the `upf.deploymentAnnotations` field in the CR. Any annotation not present in this field will be automatically reconciled by the operator (added or removed as needed), so manual changes to annotations will not persist unless reflected in the CR.
 11. **UPF GTP-U Interface:** The GTP-U network interface used by the UPF is set via the `upf.gtpuDev` field in the CR (e.g., `gtpuDev: "eth0"`). By default, the UPF uses the `eth0` interface.
+12. **Unprivileged UPF Mode (Opt-In):** Set `spec.upf.unprivileged` to `true` to run UPF without `privileged: true` and with a non-root main container (UID 1001); this field is only applied to UPF and is ignored by other components, it requires cluster support for `/dev/net/tun` and `net.ipv4.ip_forward` (including kubelet `allowed-unsafe-sysctls` and, on OpenShift, a compatible SCC), and its default value is `false`, so existing deployments keep the current behavior.
 
 ## How to create a new release
 
