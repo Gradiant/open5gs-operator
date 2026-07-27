@@ -16,6 +16,63 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Verify version bump in PR
+        if: github.event_name == 'pull_request'
+        run: |
+          set -euo pipefail
+
+          BASE_SHA="${{ github.event.pull_request.base.sha }}"
+          HEAD_SHA="${{ github.event.pull_request.head.sha }}"
+
+          CHANGED_FILES="$(git diff --name-only "$BASE_SHA" "$HEAD_SHA")"
+          REQUIRED_FILES=(
+            "Makefile"
+            "config/manager/kustomization.yaml"
+            "charts/open5gs-operator/Chart.yaml"
+            "charts/open5gs-operator/values.yaml"
+          )
+
+          MISSING=()
+          for file in "${REQUIRED_FILES[@]}"; do
+            if ! grep -qx "$file" <<< "$CHANGED_FILES"; then
+              MISSING+=("$file")
+            fi
+          done
+
+          if [ ${#MISSING[@]} -gt 0 ]; then
+            echo "Version bump required for pull requests to main."
+            echo "Missing changes in:"
+            printf ' - %s\n' "${MISSING[@]}"
+            echo "Run ./set-version.sh <new_version> and commit the updated files."
+            exit 1
+          fi
+
+      - name: Verify version consistency
+        if: github.event_name == 'pull_request'
+        run: |
+          set -euo pipefail
+
+          MAKE_VERSION="$(grep -E '^VERSION[[:space:]]*\?=' Makefile | head -1 | sed 's/.*= *//')"
+          KUSTOMIZE_TAG="$(awk '/newTag:/ {print $2; exit}' config/manager/kustomization.yaml)"
+          CHART_VERSION="$(awk '/^version:/ {print $2; exit}' charts/open5gs-operator/Chart.yaml)"
+          APP_VERSION="$(awk '/^appVersion:/ {print $2; exit}' charts/open5gs-operator/Chart.yaml | tr -d '"')"
+          VALUES_TAG="$(awk '/^[[:space:]]*tag:/ {print $2; exit}' charts/open5gs-operator/values.yaml)"
+
+          if [ "$MAKE_VERSION" != "$KUSTOMIZE_TAG" ] || \
+             [ "$MAKE_VERSION" != "$CHART_VERSION" ] || \
+             [ "$MAKE_VERSION" != "$APP_VERSION" ] || \
+             [ "$MAKE_VERSION" != "$VALUES_TAG" ]; then
+            echo "Version mismatch detected. Expected all version fields to match Makefile VERSION=$MAKE_VERSION"
+            echo "Found:"
+            echo "  config/manager/kustomization.yaml newTag=$KUSTOMIZE_TAG"
+            echo "  charts/open5gs-operator/Chart.yaml version=$CHART_VERSION"
+            echo "  charts/open5gs-operator/Chart.yaml appVersion=$APP_VERSION"
+            echo "  charts/open5gs-operator/values.yaml tag=$VALUES_TAG"
+            exit 1
+          fi
 
       - name: Install Helm
         uses: azure/setup-helm@v4
