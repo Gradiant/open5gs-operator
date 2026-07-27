@@ -618,18 +618,8 @@ upf:
 	}
 }
 
-func CreateUPFEntrypointConfigMap(namespace, open5gsName string) *corev1.ConfigMap {
-	return &corev1.ConfigMap{
-		ObjectMeta: metav1.ObjectMeta{
-			Name:      open5gsName + "-upf-entrypoint",
-			Namespace: namespace,
-			Labels: map[string]string{
-				"app.kubernetes.io/instance": open5gsName,
-				"app.kubernetes.io/name":     strings.ToLower("upf"),
-			},
-		},
-		Data: map[string]string{
-			"k8s-entrypoint.sh": `
+func CreateUPFEntrypointConfigMap(namespace, open5gsName string, unprivileged bool) *corev1.ConfigMap {
+	script := `
 #!/bin/bash
 set -e
 
@@ -649,12 +639,55 @@ echo "Enable NAT for 10.45.0.0/16 and device ogstun"
 iptables -t nat -A POSTROUTING -s 10.45.0.0/16 ! -o ogstun -j MASQUERADE;
 
 $@
-`,
+`
+	if unprivileged {
+		// Non-root, capability-only variant: the TUN device is created as a
+		// PERSISTENT device owned by the main container's UID (1001), which
+		// lets a non-root, zero-capability process attach to it afterward
+		// (Linux only requires CAP_NET_ADMIN to CREATE a TUN device, not to
+		// attach to one it already owns). net.ipv4.ip_forward is deliberately
+		// NOT set here: /proc/sys is read-only inside a non-privileged
+		// container regardless of capabilities/UID, so it must instead be set
+		// via the pod's declarative securityContext.sysctls field (see
+		// CreateUPFDeployment), which requires the cluster's kubelet to allow
+		// net.ipv4.ip_forward as an unsafe sysctl.
+		script = `
+#!/bin/bash
+set -e
+
+echo "Executing k8s customized entrypoint.sh (unprivileged)"
+echo "Creating net device ogstun"
+if grep "ogstun" /proc/net/dev > /dev/null; then
+    echo "Warning: Net device ogstun already exists! may you need to set createDev: false";
+    exit 1
+fi
+
+ip tuntap add name ogstun mode tun user 1001
+ip link set ogstun up
+echo "Setting IP 10.45.0.1 to device ogstun"
+ip addr add 10.45.0.1/16 dev ogstun;
+echo "Enable NAT for 10.45.0.0/16 and device ogstun"
+iptables -t nat -A POSTROUTING -s 10.45.0.0/16 ! -o ogstun -j MASQUERADE;
+
+$@
+`
+	}
+	return &corev1.ConfigMap{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      open5gsName + "-upf-entrypoint",
+			Namespace: namespace,
+			Labels: map[string]string{
+				"app.kubernetes.io/instance": open5gsName,
+				"app.kubernetes.io/name":     strings.ToLower("upf"),
+			},
+		},
+		Data: map[string]string{
+			"k8s-entrypoint.sh": script,
 		},
 	}
 }
 
-func CreateUPFDeployment(namespace, open5gsName, image string, envVars []corev1.EnvVar, metrics bool, serviceAccountName string, deploymentAnnotations map[string]string) *appsv1.Deployment {
+func CreateUPFDeployment(namespace, open5gsName, image string, envVars []corev1.EnvVar, metrics bool, serviceAccountName string, deploymentAnnotations map[string]string, unprivileged bool) *appsv1.Deployment {
 	var ports []corev1.ContainerPort
 	if metrics {
 		ports = []corev1.ContainerPort{
@@ -691,6 +724,147 @@ func CreateUPFDeployment(namespace, open5gsName, image string, envVars []corev1.
 	if serviceAccountName == "" {
 		serviceAccountName = "default"
 	}
+
+	// Default: today's privileged/root behavior, unchanged.
+	mainSecurityContext := &corev1.SecurityContext{
+		Capabilities: &corev1.Capabilities{
+			Add: []corev1.Capability{"NET_ADMIN"},
+		},
+		Privileged:   boolPtr(true),
+		RunAsNonRoot: boolPtr(false),
+		RunAsUser:    int64Ptr(0),
+		RunAsGroup:   int64Ptr(0),
+	}
+	initSecurityContext := &corev1.SecurityContext{
+		Capabilities: &corev1.Capabilities{
+			Add: []corev1.Capability{"NET_ADMIN"},
+		},
+		Privileged:   boolPtr(true),
+		RunAsNonRoot: boolPtr(false),
+		RunAsUser:    int64Ptr(0),
+		RunAsGroup:   int64Ptr(0),
+	}
+	mainVolumeMounts := []corev1.VolumeMount{
+		{
+			Name:      "config",
+			MountPath: "/opt/open5gs/etc/open5gs/upf.yaml",
+			SubPath:   "upf.yaml",
+		},
+	}
+	initVolumeMounts := []corev1.VolumeMount{
+		{
+			Name:      "entrypoint",
+			MountPath: "/k8s-entrypoint.sh",
+			SubPath:   "k8s-entrypoint.sh",
+		},
+	}
+	volumes := []corev1.Volume{
+		{
+			Name: "config",
+			VolumeSource: corev1.VolumeSource{
+				ConfigMap: &corev1.ConfigMapVolumeSource{
+					LocalObjectReference: corev1.LocalObjectReference{
+						Name: open5gsName + "-upf",
+					},
+					DefaultMode: int32Ptr(420),
+				},
+			},
+		},
+		{
+			Name: "entrypoint",
+			VolumeSource: corev1.VolumeSource{
+				ConfigMap: &corev1.ConfigMapVolumeSource{
+					LocalObjectReference: corev1.LocalObjectReference{
+						Name: open5gsName + "-upf-entrypoint",
+					},
+					DefaultMode: int32Ptr(511),
+				},
+			},
+		},
+	}
+	podSecurityContext := &corev1.PodSecurityContext{
+		FSGroup: int64Ptr(1001),
+	}
+	mainCommand := []string(nil)
+	mainArgs := []string{"open5gs-upfd"}
+
+	if unprivileged {
+		// Main container: no capabilities at all. It only attaches to the
+		// persistent, already-owned TUN device the init container created -
+		// Linux doesn't require CAP_NET_ADMIN to attach to a TUN device the
+		// calling UID already owns, only to create one.
+		//
+		// Neither container sets seLinuxOptions here even though SELinux-
+		// enforcing nodes (e.g. RHCOS/OpenShift) require type spc_t for tun
+		// device access (the default container_t domain has no policy
+		// allowing chr_file access to devices of type tun_tap_device_t,
+		// regardless of capabilities or UID) - the level half of that pair is
+		// namespace-specific (SCC MustRunAs auto-assigns it per project) and
+		// can't be hardcoded here. Setting only Type at the container level
+		// without a matching Level fails SCC validation outright. This is
+		// left entirely to the bound SCC's own seLinuxContext default
+		// instead (see the open5gs-upf-unprivileged SCC in the deployment
+		// examples), which fills in both consistently.
+		mainSecurityContext = &corev1.SecurityContext{
+			Capabilities: &corev1.Capabilities{
+				Drop: []corev1.Capability{"ALL"},
+			},
+			Privileged:   boolPtr(false),
+			RunAsNonRoot: boolPtr(true),
+			RunAsUser:    int64Ptr(1001),
+			RunAsGroup:   int64Ptr(1001),
+		}
+		// The image's own default entrypoint (/entrypoint.sh, invoked
+		// implicitly since no Command is set) redundantly redoes the same
+		// tun/NAT/sysctl setup the init container already did, unconditionally,
+		// every time its Args match "open5gs-upfd" - requiring the same
+		// elevated privileges the main container is specifically trying to
+		// avoid here. Bypassing it and invoking the real binary directly
+		// skips that redundant (and here, privileged-only) work entirely.
+		mainCommand = []string{"/opt/open5gs/bin/open5gs-upfd"}
+		mainArgs = []string{"-c", "/opt/open5gs/etc/open5gs/upf.yaml"}
+		// Init container: root (not privileged) so CAP_NET_ADMIN is actually
+		// effective - Kubernetes does not set ambient/inheritable capabilities
+		// for non-root containers, so a non-root container requesting
+		// NET_ADMIN here would have it in its bounding set only, never
+		// effective. Root does not have that problem: effective capabilities
+		// for a root process come directly from the bounding set.
+		initSecurityContext = &corev1.SecurityContext{
+			Capabilities: &corev1.Capabilities{
+				Drop: []corev1.Capability{"ALL"},
+				Add:  []corev1.Capability{"NET_ADMIN"},
+			},
+			Privileged: boolPtr(false),
+			RunAsUser:  int64Ptr(0),
+			RunAsGroup: int64Ptr(0),
+		}
+		tunDeviceHostPathType := corev1.HostPathCharDev
+		volumes = append(volumes, corev1.Volume{
+			Name: "tun-device",
+			VolumeSource: corev1.VolumeSource{
+				HostPath: &corev1.HostPathVolumeSource{
+					Path: "/dev/net/tun",
+					Type: &tunDeviceHostPathType,
+				},
+			},
+		})
+		mainVolumeMounts = append(mainVolumeMounts, corev1.VolumeMount{
+			Name:      "tun-device",
+			MountPath: "/dev/net/tun",
+		})
+		initVolumeMounts = append(initVolumeMounts, corev1.VolumeMount{
+			Name:      "tun-device",
+			MountPath: "/dev/net/tun",
+		})
+		// net.ipv4.ip_forward cannot be set from inside the container even as
+		// root (/proc/sys is read-only regardless of capabilities/UID); it
+		// must go through the pod's declarative sysctls, which requires the
+		// cluster's kubelet to allow it as an unsafe sysctl.
+		podSecurityContext.Sysctls = []corev1.Sysctl{
+			{Name: "net.ipv4.ip_forward", Value: "1"},
+		}
+	}
+
 	return &appsv1.Deployment{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:      open5gsName + "-upf",
@@ -720,58 +894,18 @@ func CreateUPFDeployment(namespace, open5gsName, image string, envVars []corev1.
 					ServiceAccountName: serviceAccountName,
 					Containers: []corev1.Container{
 						{
-							Name:  "open5gs-upf",
-							Image: image,
-							Args:  []string{"open5gs-upfd"},
-							Ports: ports,
-							Env:   envVars,
-							VolumeMounts: []corev1.VolumeMount{
-								{
-									Name:      "config",
-									MountPath: "/opt/open5gs/etc/open5gs/upf.yaml",
-									SubPath:   "upf.yaml",
-								},
-							},
-							SecurityContext: &corev1.SecurityContext{
-								Capabilities: &corev1.Capabilities{
-									Add: []corev1.Capability{
-										"NET_ADMIN",
-									},
-								},
-								Privileged:   boolPtr(true),
-								RunAsNonRoot: boolPtr(false),
-								RunAsUser:    int64Ptr(0),
-								RunAsGroup:   int64Ptr(0),
-							},
+							Name:            "open5gs-upf",
+							Image:           image,
+							Command:         mainCommand,
+							Args:            mainArgs,
+							Ports:           ports,
+							Env:             envVars,
+							VolumeMounts:    mainVolumeMounts,
+							SecurityContext: mainSecurityContext,
 						},
 					},
-					Volumes: []corev1.Volume{
-						{
-							Name: "config",
-							VolumeSource: corev1.VolumeSource{
-								ConfigMap: &corev1.ConfigMapVolumeSource{
-									LocalObjectReference: corev1.LocalObjectReference{
-										Name: open5gsName + "-upf",
-									},
-									DefaultMode: int32Ptr(420),
-								},
-							},
-						},
-						{
-							Name: "entrypoint",
-							VolumeSource: corev1.VolumeSource{
-								ConfigMap: &corev1.ConfigMapVolumeSource{
-									LocalObjectReference: corev1.LocalObjectReference{
-										Name: open5gsName + "-upf-entrypoint",
-									},
-									DefaultMode: int32Ptr(511),
-								},
-							},
-						},
-					},
-					SecurityContext: &corev1.PodSecurityContext{
-						FSGroup: int64Ptr(1001),
-					},
+					Volumes:         volumes,
+					SecurityContext: podSecurityContext,
 					InitContainers: []corev1.Container{
 						{
 							Name:  "tun-create",
@@ -781,24 +915,8 @@ func CreateUPFDeployment(namespace, open5gsName, image string, envVars []corev1.
 								"-c",
 								"/k8s-entrypoint.sh",
 							},
-							VolumeMounts: []corev1.VolumeMount{
-								{
-									Name:      "entrypoint",
-									MountPath: "/k8s-entrypoint.sh",
-									SubPath:   "k8s-entrypoint.sh",
-								},
-							},
-							SecurityContext: &corev1.SecurityContext{
-								Capabilities: &corev1.Capabilities{
-									Add: []corev1.Capability{
-										"NET_ADMIN",
-									},
-								},
-								Privileged:   boolPtr(true),
-								RunAsNonRoot: boolPtr(false),
-								RunAsUser:    int64Ptr(0),
-								RunAsGroup:   int64Ptr(0),
-							},
+							VolumeMounts:    initVolumeMounts,
+							SecurityContext: initSecurityContext,
 						},
 					},
 				},

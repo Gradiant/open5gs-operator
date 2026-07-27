@@ -65,6 +65,10 @@ spec:
                     type: boolean
                   serviceMonitor:
                     type: boolean
+                  unprivileged:
+                    description: Unprivileged runs the UPF without privileged:true/root
+                      (UPF only).
+                    type: boolean
                 type: object
               ausf:
                 properties:
@@ -91,6 +95,10 @@ spec:
                     type: boolean
                   serviceMonitor:
                     type: boolean
+                  unprivileged:
+                    description: Unprivileged runs the UPF without privileged:true/root
+                      (UPF only).
+                    type: boolean
                 type: object
               bsf:
                 properties:
@@ -116,6 +124,10 @@ spec:
                   serviceAccount:
                     type: boolean
                   serviceMonitor:
+                    type: boolean
+                  unprivileged:
+                    description: Unprivileged runs the UPF without privileged:true/root
+                      (UPF only).
                     type: boolean
                 type: object
               configuration:
@@ -165,6 +177,10 @@ spec:
                     type: boolean
                   serviceMonitor:
                     type: boolean
+                  unprivileged:
+                    description: Unprivileged runs the UPF without privileged:true/root
+                      (UPF only).
+                    type: boolean
                 type: object
               mongoDBVersion:
                 type: string
@@ -193,6 +209,10 @@ spec:
                     type: boolean
                   serviceMonitor:
                     type: boolean
+                  unprivileged:
+                    description: Unprivileged runs the UPF without privileged:true/root
+                      (UPF only).
+                    type: boolean
                 type: object
               nssf:
                 properties:
@@ -218,6 +238,10 @@ spec:
                   serviceAccount:
                     type: boolean
                   serviceMonitor:
+                    type: boolean
+                  unprivileged:
+                    description: Unprivileged runs the UPF without privileged:true/root
+                      (UPF only).
                     type: boolean
                 type: object
               open5gsImage:
@@ -247,6 +271,10 @@ spec:
                     type: boolean
                   serviceMonitor:
                     type: boolean
+                  unprivileged:
+                    description: Unprivileged runs the UPF without privileged:true/root
+                      (UPF only).
+                    type: boolean
                 type: object
               scp:
                 properties:
@@ -272,6 +300,10 @@ spec:
                   serviceAccount:
                     type: boolean
                   serviceMonitor:
+                    type: boolean
+                  unprivileged:
+                    description: Unprivileged runs the UPF without privileged:true/root
+                      (UPF only).
                     type: boolean
                 type: object
               smf:
@@ -299,6 +331,10 @@ spec:
                     type: boolean
                   serviceMonitor:
                     type: boolean
+                  unprivileged:
+                    description: Unprivileged runs the UPF without privileged:true/root
+                      (UPF only).
+                    type: boolean
                 type: object
               udm:
                 properties:
@@ -324,6 +360,10 @@ spec:
                   serviceAccount:
                     type: boolean
                   serviceMonitor:
+                    type: boolean
+                  unprivileged:
+                    description: Unprivileged runs the UPF without privileged:true/root
+                      (UPF only).
                     type: boolean
                 type: object
               udr:
@@ -351,6 +391,10 @@ spec:
                     type: boolean
                   serviceMonitor:
                     type: boolean
+                  unprivileged:
+                    description: Unprivileged runs the UPF without privileged:true/root
+                      (UPF only).
+                    type: boolean
                 type: object
               upf:
                 properties:
@@ -377,6 +421,10 @@ spec:
                     type: boolean
                   serviceMonitor:
                     type: boolean
+                  unprivileged:
+                    description: Unprivileged runs the UPF without privileged:true/root
+                      (UPF only).
+                    type: boolean
                 type: object
               webui:
                 properties:
@@ -402,6 +450,10 @@ spec:
                   serviceAccount:
                     type: boolean
                   serviceMonitor:
+                    type: boolean
+                  unprivileged:
+                    description: Unprivileged runs the UPF without privileged:true/root
+                      (UPF only).
                     type: boolean
                 type: object
               webuiImage:
