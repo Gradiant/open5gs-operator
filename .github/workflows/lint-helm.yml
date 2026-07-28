@@ -10,7 +10,7 @@ on:
 
 jobs:
   lint-helm:
-    runs-on: ubuntu-latest
+    runs-on: si-k8s-dev-amd64
     env:
       CHART_PATH: charts/open5gs-operator
     steps:
