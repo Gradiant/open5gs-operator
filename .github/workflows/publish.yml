@@ -10,7 +10,7 @@ on:
 
 jobs:
   build-and-publish:
-    runs-on: si-k8s-dev-amd64
+    runs-on: ubuntu-latest
     env:
       IMAGE_NAME: gradiant/open5gs-operator
       CHART_PATH: charts/open5gs-operator
