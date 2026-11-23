@@ -18,9 +18,10 @@ metadata:
     app.kubernetes.io/managed-by: kustomize
   name: open5gs-sample
 spec:
-  open5gsImage: "docker.io/gradiant/open5gs:2.7.5"
-  webuiImage: "docker.io/gradiant/open5gs-webui:2.7.5"
-  mongoDBVersion: "bitnami/mongodb:latest"
+  open5gsImage: "docker.io/gradiant/open5gs:2.8.0"
+  webuiImage: "docker.io/gradiant/open5gs-webui:2.8.0"
+  mongoDBVersion: "docker.io/library/mongo:8.0.34"
+  webuiAdminSecret: open5gs-webui-admin
   amf:
     enabled: true
     serviceAccount: true
@@ -84,6 +85,16 @@ spec:
 ```
 <a href="https://gradiant.github.io/open5gs-operator/docs/advanced-deployment/open5gs-advanced-deployment.yaml" class="download-button" download>Download open5gs-advanced-deployment.yaml</a>
 
+For a fresh database, create the WebUI administrator Secret once in the same namespace. Use a password of at least 12 characters.
+
+```bash
+read -r -s -p "WebUI password: " WEBUI_PASSWORD
+printf '\n'
+printf '%s' "$WEBUI_PASSWORD" | kubectl create secret generic open5gs-webui-admin \
+  --from-literal=username=open5gs-admin --from-file=password=/dev/stdin
+unset WEBUI_PASSWORD
+```
+
 Apply the manifest to the cluster:
 ```bash
 kubectl apply -f open5gs-advanced-deployment.yaml
@@ -91,10 +102,11 @@ kubectl apply -f open5gs-advanced-deployment.yaml
 
 ### 1.1 Explanation of Configurable Fields
 
-- **`open5gsImage` & `webuiImage`**: Define the Open5GS and WebUI image versions. Defaults to `docker.io/gradiant/open5gs:2.7.5`.
-- **`mongoDBVersion`**: Specifies the MongoDB version used. Default is `bitnami/mongodb:latest`.
+- **`open5gsImage` & `webuiImage`**: Define the Open5GS and WebUI image versions. Both default to Gradiant images tagged `2.8.0`.
+- **`mongoDBVersion`**: Specifies the MongoDB version used. Fresh deployments default to `docker.io/library/mongo:8.0.34`. See the [installation notes](../installation-options/installation-options.md) before changing an existing Bitnami deployment.
+- **`webuiAdminSecret`**: Names the Secret containing the initial WebUI administrator credentials.
 - **`enabled`**: Activates or deactivates an Open5GS component. Essential components are enabled by default.
-- **`serviceAccount`**: Determines whether a component has a dedicated Kubernetes Service Account.
+- **`serviceAccount`**: Dedicated accounts are enabled by default. Workloads run without an API token with either account.
 - **`metrics` & `serviceMonitor`**: Enable Prometheus monitoring. Defaults: `metrics` enabled for AMF, PCF, SMF, and UPF; `serviceMonitor` disabled.
 - **`serviceType`**: Defines Kubernetes service exposure (`ClusterIP`, `NodePort`, `LoadBalancer`). Default: `ClusterIP`.
 - **`slices`**: Defines network slices (`sst` and `sd`) for user segmentation. If omitted, Open5GS uses a default slice.
@@ -114,9 +126,10 @@ metadata:
     app.kubernetes.io/managed-by: kustomize
   name: open5gs-sample
 spec:
-  open5gsImage: "docker.io/gradiant/open5gs:2.7.5"
-  webuiImage: "docker.io/gradiant/open5gs-webui:2.7.5"
-  mongoDBVersion: "bitnami/mongodb:latest"
+  open5gsImage: "docker.io/gradiant/open5gs:2.8.0"
+  webuiImage: "docker.io/gradiant/open5gs-webui:2.8.0"
+  mongoDBVersion: "docker.io/library/mongo:8.0.34"
+  webuiAdminSecret: open5gs-webui-admin
   amf:
     enabled: true
     serviceAccount: true
@@ -185,7 +198,6 @@ kubectl apply -f open5gs-advanced-deployment-modified.yaml
 
 ### 2.1 Changes Made
 
-- **Changed WebUI image version to 2.7.0**.
 - **Disabled ServiceAccount for AUSF**.
 - **Disabled ServiceMonitor for AMF**.
 - **Disabled BSF**.
@@ -194,7 +206,7 @@ kubectl apply -f open5gs-advanced-deployment-modified.yaml
 - **Exposed pfcp in UPF as NodePort**.
 - **Ommited `region` and `set` fields** in the configuration (set to default values).
 
-As the slice configuration was not modified (only some values were omitted), the default slices will be used thus no changes will be observed in the deployment. If the slice configuration was modified, the changes would be reflected in the deployment by modifiying the NSSF and AMF ConfigMaps and restarting the pods in order to apply the changes.
+The slice configuration stays the same in both examples. If the slice configuration was modified, the changes would be reflected in the deployment by modifiying the NSSF and AMF ConfigMaps and restarting the pods in order to apply the changes.
 
 ## 3. Verifying Changes
 
@@ -267,12 +279,12 @@ kubectl apply -f open5gs-user.yaml
 ```
 
 ### 4.3 Modifying an Existing User
-To update user values, modify the `sd`, `sst`, or `apn` fields in the CRD:
+To update user values, modify `sd` and `sst`. Keep the `internet` APN configured by this example:
 ```yaml
 spec:
   sd: "222222"
   sst: "2"
-  apn: "enterprise"
+  apn: "internet"
 ```
 
 The new manifest should look like this:
@@ -287,7 +299,7 @@ spec:
   opc: "E8ED289DEBA952E4283B54E88E6183CA"
   sd: "222222"
   sst: "2"
-  apn: "enterprise"
+  apn: "internet"
   open5gs:
     name: "open5gs-sample"
 ```

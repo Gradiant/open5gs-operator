@@ -8,6 +8,6 @@ spec:
   opc: "E8ED289DEBA952E4283B54E88E6183CA"
   sd: "222222"
   sst: "2"
-  apn: "enterprise"
+  apn: "internet"
   open5gs:
     name: "open5gs-sample"
