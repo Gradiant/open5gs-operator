@@ -9,7 +9,8 @@ permissions:
 
 jobs:
   kind:
-    runs-on: ubuntu-latest
+    # Match 5g-charts CI: MongoDB 8.0.34 can exit during startup on newer Linux kernels.
+    runs-on: ubuntu-22.04
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
@@ -19,6 +20,8 @@ jobs:
       - uses: azure/setup-helm@v4
         with:
           version: v3.18.4
+      - name: Report runner kernel
+        run: uname -r
       - name: Ensure the runner has a TUN device
         run: |
           if [ ! -c /dev/net/tun ]; then
@@ -43,6 +46,11 @@ jobs:
         run: bash test/kind/smoke.sh
       - name: Validate MongoDB migration and rollback
         run: bash test/kind/mongodb-migration.sh
-      - name: Controller logs on failure
+      - name: Collect logs on failure
         if: failure()
-        run: kubectl logs -n open5gs-system -l control-plane=controller-manager --tail=150
+        run: |
+          kubectl logs -n open5gs-system -l control-plane=controller-manager --tail=150 || true
+          for namespace in open5gs-kind-smoke open5gs-kind-migration; do
+            kubectl -n "$namespace" logs -l app.kubernetes.io/name=mongodb -c mongodb --tail=100 || true
+            kubectl -n "$namespace" logs -l app.kubernetes.io/name=mongodb -c mongodb --previous --tail=100 || true
+          done
