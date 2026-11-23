@@ -1,13 +1,11 @@
 amf:
   hostname: open5gs-sample-amf-ngap
-
-mcc: '999'
-mnc: '70'
+mcc: "999"
+mnc: "70"
 sst: 1
 sd: "0x111111"
-tac: '0001'
-
+tac: "0001"
+image:
+  pullPolicy: IfNotPresent
 ues:
-  enabled: true
-  count: 2
-  initialMSISDN: '0000000001'
+  enabled: false

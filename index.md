@@ -4,6 +4,8 @@ title: "Open5GS Kubernetes Operator"
 
 # Open5GS Kubernetes Operator
 
+These tutorials use operator and Helm chart **1.1.0**. Start with [Installation Options](docs/installation-options/installation-options.md) or use the [MongoDB migration guide](docs/mongodb-migration/mongodb-migration.md) if you already run Bitnami MongoDB.
+
 The **Open5GS Kubernetes Operator** is a custom Kubernetes operator designed to automate the deployment, configuration, and lifecycle management of Open5GS and its subscribers in a declarative manner. It uses two Custom Resource Definitions (CRDs): one to manage Open5GS deployments and another for user management.
 
 ## What does it do?
@@ -28,6 +30,7 @@ The operator provides full management of Open5GS subscribers, including configur
   A guide to setting up a basic deployment of Open5GS using the operator.
 - [Advanced Open5GS Deployment](docs/advanced-deployment/advanced-deployment.md)  
   A guide to setting up an advanced deployment of Open5GS using the operator, including more advanced configuration options.
+- [MongoDB Migration](docs/mongodb-migration/mongodb-migration.md) explains how to move an existing Bitnami database to official MongoDB using a separate PVC and a verified backup.
 - [Complete Demo with UERANSIM](docs/complete-demo-ueransim/complete-demo-ueransim.md)  
   A comprehensive demonstration of deploying the operator with a UERANSIM setup for testing connectivity.
 

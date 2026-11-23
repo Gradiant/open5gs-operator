@@ -14,7 +14,6 @@ spec:
   apn: "internet"
   open5gs:
     name: "open5gs-sample"
-    namespace: "default"
 ---
 apiVersion: net.gradiant.org/v1
 kind: Open5GSUser
@@ -32,7 +31,6 @@ spec:
   apn: "internet"
   open5gs:
     name: "open5gs-sample"
-    namespace: "default"
 ---
 apiVersion: net.gradiant.org/v1
 kind: Open5GSUser
@@ -50,7 +48,6 @@ spec:
   apn: "internet"
   open5gs:
     name: "open5gs-sample"
-    namespace: "default"
 ---
 apiVersion: net.gradiant.org/v1
 kind: Open5GSUser
@@ -68,4 +65,3 @@ spec:
   apn: "internet"
   open5gs:
     name: "open5gs-sample"
-    namespace: "default"

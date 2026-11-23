@@ -1,55 +1,32 @@
-# Create a Basic Open5GS Deployment
+---
+title: Basic Open5GS deployment
+---
 
-1. Create a deployment configuration file for Open5GS. Here’s a basic example (the missing configuration will be set to default values):
+# Create a basic Open5GS deployment
 
-    ``` yaml
-apiVersion: net.gradiant.org/v1
-kind: Open5GS
-metadata:
-    name: open5gs-sample
-spec:
-    configuration:
-        slices:
-          - sst: "1"
-            sd: "0x111111"
-    ```
-    <a href="https://gradiant.github.io/open5gs-operator/docs/basic-deployment/open5gs-basic-deployment.yaml" class="download-button" download>Download open5gs-basic-deployment.yaml</a>
+After [installing the operator](../installation-options/installation-options.md), use the example manifests to create an Open5GS instance and one subscriber. The instance uses Open5GS 2.8.0 and official MongoDB 8.0.34. You can enable WebUI in the [advanced deployment](../advanced-deployment/advanced-deployment.md).
 
-    - The `slices` field is optional. If it is not provided in the configuration, default values will be used by the operator.
+Download [open5gs-basic-deployment.yaml](open5gs-basic-deployment.yaml) and [open5gs-user.yaml](open5gs-user.yaml) into your working directory.
 
-2. Apply the deployment file:
+```bash
+kubectl create namespace open5gs-basic
+kubectl -n open5gs-basic apply -f open5gs-basic-deployment.yaml
+```
 
-   ``` bash
-   kubectl apply -f open5gs-basic-deployment.yaml
-   ```
+Wait for the Deployments to appear, then check that the core Pods are ready and the MongoDB claim is bound.
 
-### Create Open5GS Users
+```bash
+kubectl -n open5gs-basic get deployments,pods,pvc
+kubectl -n open5gs-basic rollout status deployment/open5gs-sample-mongodb --timeout=330s
+kubectl -n open5gs-basic rollout status deployment/open5gs-sample-upf --timeout=330s
+```
 
-1. Create a configuration file for the users you want to add. Here’s an example:
+Register the subscriber in the same namespace. The IMSI and authentication keys are public lab values.
 
-    ```yaml
-apiVersion: net.gradiant.org/v1
-kind: Open5GSUser
-metadata:
-    name: open5gsuser-sample
-spec:
-    imsi: "999700000000001"
-    key: "465B5CE8B199B49FAA5F0A2EE238A6BC"
-    opc: "E8ED289DEBA952E4283B54E88E6183CA"
-    sd: "111111"
-    sst: "1"
-    apn: "internet"
-    open5gs:
-        name: "open5gs-sample"
-        namespace: "default"
-    ```
-    <a href="https://gradiant.github.io/open5gs-operator/docs/basic-deployment/open5gs-user.yaml" class="download-button" download>Download open5gs-user.yaml</a>
+```bash
+kubectl -n open5gs-basic apply -f open5gs-user.yaml
+kubectl -n open5gs-basic exec deployment/open5gs-sample-mongodb -- \
+  mongosh open5gs --quiet --eval 'db.subscribers.countDocuments({imsi: "999700000000001"})'
+```
 
-    - The `apn`, `sst`, and `sd` fields are optional. If they are not provided in the configuration, default values will be used by the system.
-    - The `open5gs` field must contain the `name` and `namespace` of the Open5GS deployment to which the user will be assigned.
-
-2. Apply the user configuration:
-
-   ``` bash
-   kubectl apply -f open5gs-user.yaml
-   ```
+The count should reach `1` after reconciliation. For a registration and data path test, continue with the [UERANSIM demo](../complete-demo-ueransim/complete-demo-ueransim.md).
