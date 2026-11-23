@@ -7,6 +7,7 @@
 package suite_1
 
 import (
+	"crypto/rand"
 	"fmt"
 	"os/exec"
 	"strings"
@@ -28,6 +29,19 @@ var _ = Describe("controller", Ordered, func() {
 		By("creating manager namespace2")
 		cmd = exec.Command("kubectl", "create", "ns", namespace2)
 		_, _ = utils.Run(cmd)
+		for _, ns := range []string{namespace, namespace2} {
+			cmd := exec.Command("kubectl", "apply", "--namespace", ns, "-f", "-")
+			cmd.Stdin = strings.NewReader(fmt.Sprintf(`apiVersion: v1
+kind: Secret
+metadata:
+  name: webui-admin
+stringData:
+  username: suite-admin
+  password: "%s"
+`, rand.Text()))
+			_, err := utils.Run(cmd)
+			Expect(err).NotTo(HaveOccurred())
+		}
 	})
 
 	AfterAll(func() {
