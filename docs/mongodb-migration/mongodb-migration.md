@@ -30,6 +30,12 @@ If your database requires authentication, use your approved access method. Keep 
 
 Download [mongodb-restore.yaml](mongodb-restore.yaml). It starts a temporary MongoDB instance without a Service and mounts `open5gs-mongodb-restored` at `/data/db`. Choose a claim name and storage size appropriate for your deployment. Verify that the namespace has a StorageClass and that these object names are available before you apply the file.
 
+### Temporary MongoDB and restore PVC
+
+```yaml
+{% include_relative mongodb-restore.yaml %}
+```
+
 ```bash
 kubectl -n "$NS" apply -f mongodb-restore.yaml
 kubectl -n "$NS" rollout status deployment/mongodb-restore --timeout=330s

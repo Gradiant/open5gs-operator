@@ -12,6 +12,12 @@ Run the lab on a Linux host with Docker, Kind, kubectl, Helm, and `/dev/net/tun`
 
 Download that file, [the first Open5GS manifest](open5gs-one-slice.yaml), [the subscriber manifest](open5gs-users.yaml), and [the gNB settings](gnb-1-values.yaml) into your working directory. Run the commands in Bash.
 
+### Kind configuration
+
+```yaml
+{% include_relative kind-config.yaml %}
+```
+
 ```bash
 kind create cluster --name open5gs-demo --image kindest/node:v1.35.0 --config kind-config.yaml --wait 120s
 kubectl config current-context
@@ -20,6 +26,18 @@ kubectl config current-context
 Confirm that the context is `kind-open5gs-demo`, then follow [Install with Helm](../installation-options/installation-options.md#install-with-helm). That uses the public operator chart `1.1.0`.
 
 ## Deploy the core and register subscribers
+
+### Open5GS with the first slice
+
+```yaml
+{% include_relative open5gs-one-slice.yaml %}
+```
+
+### Subscribers for both slices
+
+```yaml
+{% include_relative open5gs-users.yaml %}
+```
 
 ```bash
 NS=open5gs-demo
@@ -43,6 +61,12 @@ k exec deployment/open5gs-sample-mongodb -- mongosh open5gs --quiet --eval 'db.s
 Wait for the count to reach `4` before starting the gNB and the first two UEs. The two remaining subscribers are used in the extension.
 
 ## Run the gNB and test each UE
+
+### gNB values for the first slice
+
+```yaml
+{% include_relative gnb-1-values.yaml %}
+```
 
 ```bash
 helm upgrade --install ueransim-gnb oci://registry-1.docker.io/gradiant/ueransim-gnb \
@@ -95,6 +119,18 @@ Each command should print HTTP `200` and a different address from the `10.45.0.0
 ## Extension: add a second slice
 
 Download [the two-slice manifest](open5gs-one-slice-uncommented.yaml) and [the second gNB configuration](gnb-2-values.yaml). The operator updates the AMF and NSSF configurations when you apply the manifest. This phase switches the same simulated gNB to the second slice and brings up two new UEs. Restart the gNB after upgrading its Helm release so it loads the updated configuration and reconnects to the AMF.
+
+### Open5GS with both slices
+
+```yaml
+{% include_relative open5gs-one-slice-uncommented.yaml %}
+```
+
+### gNB values for the second slice
+
+```yaml
+{% include_relative gnb-2-values.yaml %}
+```
 
 ```bash
 helm uninstall simulated-ue-1 simulated-ue-2 --namespace "$NS"

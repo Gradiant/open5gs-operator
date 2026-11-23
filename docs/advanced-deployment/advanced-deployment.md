@@ -8,6 +8,12 @@ This example enables WebUI, creates two slices, and updates CPU and memory on a 
 
 Download [the initial manifest](open5gs-advanced-deployment.yaml) and [the modified manifest](open5gs-advanced-deployment-modified.yaml). Both use the same Open5GS resource and Secret name.
 
+### Initial Open5GS instance
+
+```yaml
+{% include_relative open5gs-advanced-deployment.yaml %}
+```
+
 ## Enable WebUI
 
 Create an administrator Secret before starting WebUI on a fresh database. It needs `username` and `password` keys. Use a unique password of at least 12 characters and keep it available for signing in.
@@ -37,6 +43,12 @@ Open <http://localhost:9999> and sign in with the new account. On an existing da
 
 In another terminal, apply the modified manifest. It changes UPF CPU and memory settings and switches AUSF to the namespace default ServiceAccount.
 
+### Modified Open5GS instance
+
+```yaml
+{% include_relative open5gs-advanced-deployment-modified.yaml %}
+```
+
 ```bash
 kubectl -n open5gs-advanced apply -f open5gs-advanced-deployment-modified.yaml
 kubectl -n open5gs-advanced wait --for=jsonpath='{.spec.template.spec.containers[0].resources.requests.cpu}'=75m \
@@ -64,6 +76,18 @@ The [UERANSIM demo](../complete-demo-ueransim/complete-demo-ueransim.md) include
 - `spec.configuration.slices` sets the supported slices. The operator applies changes to the affected Pods, which can cause an interruption. The [two-slice example](../complete-demo-ueransim/complete-demo-ueransim.md#extension-add-a-second-slice) verifies a second slice after updating this field.
 
 To update a managed subscriber, apply [the original user](open5gs-user.yaml) and then [the updated user](open5gs-user-modified.yaml) in the same namespace. This changes the subscriber from SST 1 and SD `111111` to SST 2 and SD `222222`. Both examples use the `internet` DNN.
+
+### Original subscriber
+
+```yaml
+{% include_relative open5gs-user.yaml %}
+```
+
+### Modified subscriber
+
+```yaml
+{% include_relative open5gs-user-modified.yaml %}
+```
 
 ```bash
 kubectl -n open5gs-advanced apply -f open5gs-user.yaml

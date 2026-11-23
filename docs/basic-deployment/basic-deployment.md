@@ -8,6 +8,12 @@ After [installing the operator](../installation-options/installation-options.md)
 
 Download [open5gs-basic-deployment.yaml](open5gs-basic-deployment.yaml) and [open5gs-user.yaml](open5gs-user.yaml) into your working directory.
 
+### Open5GS instance
+
+```yaml
+{% include_relative open5gs-basic-deployment.yaml %}
+```
+
 ```bash
 kubectl create namespace open5gs-basic
 kubectl -n open5gs-basic apply -f open5gs-basic-deployment.yaml
@@ -22,6 +28,12 @@ kubectl -n open5gs-basic rollout status deployment/open5gs-sample-upf --timeout=
 ```
 
 Register the subscriber in the same namespace. The IMSI and authentication keys are public lab values.
+
+### Subscriber
+
+```yaml
+{% include_relative open5gs-user.yaml %}
+```
 
 ```bash
 kubectl -n open5gs-basic apply -f open5gs-user.yaml
