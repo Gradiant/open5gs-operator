@@ -108,13 +108,24 @@ A complete demo with UERANSIM is available at [this link](https://gradiant.githu
 3. By default, service accounts are not created. To create a service account, set the `serviceAccount` field to `true` in the CR for the desired component.
 4. By default, components with metrics support have metrics enabled (AMF, PCF, UPF). To disable metrics, set the `metrics` field to `false` in the CR for the desired component.
 5. By default, components use the `ClusterIP` service type. To change the service type, set the `serviceType` field to `LoadBalancer` or `NodePort` in the CR for the desired component. This option is currently available for the `amf-ngap`, `smf-pfcp`, `upf-pfcp`, and `upf-gtpu` services.
-6. The `open5gsImage` field in the CR specifies the version of the Open5GS images. If not specified, the operator defaults to version `docker.io/gradiant/open5gs:2.7.5`.
-7. The `webuiImage` field in the CR specifies the version of the Open5GS WebUI image. If not specified, the operator defaults to version `docker.io/gradiant/open5gs-webui:2.7.5`.
-8. The `mongoDBVersion` field in the CR specifies the version of the MongoDB image. If not specified, the operator defaults to version `bitnami/mongodb:latest`.
+6. The `open5gsImage` field in the CR specifies the version of the Open5GS images. If not specified, the operator defaults to version `docker.io/gradiant/open5gs:2.8.0`.
+7. The `webuiImage` field in the CR specifies the version of the Open5GS WebUI image. If not specified, the operator defaults to version `docker.io/gradiant/open5gs-webui:2.8.0`.
+8. The `mongoDBVersion` field in the CR specifies the version of the MongoDB image. If not specified, new installations use `docker.io/library/mongo:8.0.34`. See [MongoDB migration](#mongodb-migration) before changing an existing installation.
 9. Components with metric support can generate a `ServiceMonitor` CR to expose metrics to Prometheus. However, ensure that the `ServiceMonitor` CRD is installed in the cluster; otherwise, the operator will encounter an error and fail to create the resource. To create a ServiceMonitor, set the `serviceMonitor` field to `true` in the CR for the desired component.
-10. **UPF Deployment Annotations:** The annotations for the UPF Deployment are managed exclusively through the `upf.deploymentAnnotations` field in the CR. Any annotation not present in this field will be automatically reconciled by the operator (added or removed as needed), so manual changes to annotations will not persist unless reflected in the CR.
+10. **UPF Deployment Annotations.** Use `upf.deploymentAnnotations` to add or remove annotations on the Pod template. The operator tracks the annotations specified in this field and preserves annotations added independently.
 11. **UPF GTP-U Interface:** The GTP-U network interface used by the UPF is set via the `upf.gtpuDev` field in the CR (e.g., `gtpuDev: "eth0"`). By default, the UPF uses the `eth0` interface.
 12. **Unprivileged UPF Mode (Opt-In):** Set `spec.upf.unprivileged` to `true` to run UPF without `privileged: true` and with a non-root main container (UID 1001); this field is only applied to UPF and is ignored by other components, it requires cluster support for `/dev/net/tun` and `net.ipv4.ip_forward` (including kubelet `allowed-unsafe-sysctls` and, on OpenShift, a compatible SCC), and its default value is `false`, so existing deployments keep the current behavior.
+13. **WebUI bootstrap.** For a new database, create a Secret in the same namespace with keys `username` and `password` (at least 12 characters) and set `spec.webuiAdminSecret` to its name. WebUI waits for a configured administrator before starting. Restart the WebUI Deployment after changing bootstrap inputs. Existing accounts are preserved. Rotate any account still using the previous default password through WebUI.
+14. **Workload permissions and sizing.** Each component uses a dedicated ServiceAccount by default. Set `spec.<component>.serviceAccount: false` to use the namespace default account. Workload Pods do not mount API tokens in either case. Set `spec.<component>.resources` to override the default CPU and memory requests and limits for its main container.
+
+### MongoDB migration
+
+Before upgrading an existing Bitnami installation, pin an available image tag for the legacy deployment and keep it available for rollback. When `mongoDBVersion` is omitted, the operator keeps the image and claim of an existing Bitnami deployment. The official image uses `/data/db` and a separate PVC.
+
+1. Schedule a maintenance window and stop writes from the core, WebUI and subscriber controller. Back up the `open5gs` database with `mongodump --db open5gs --archive`. Store the archive securely because it contains subscriber keys and account hashes.
+2. Provision a separate PVC and attach it to a temporary MongoDB instance using the desired official image with UID/GID 999 and mount path `/data/db`. Restore with `mongorestore --archive --nsInclude='open5gs.*'`. Check collection counts, representative subscribers and accounts, and confirm the temporary instance can restart and still read its data.
+3. Stop the temporary MongoDB instance so it releases the volume. Set `spec.mongoDBVolumeClaim` to the restored PVC and `spec.mongoDBVersion` to the tested official image. Wait for MongoDB and the dependent workloads. Validate a known WebUI account and a subscriber session before resuming normal writes.
+4. Keep the old volume and archive until cutover is accepted. To roll back, set the original Bitnami image explicitly and clear `spec.mongoDBVolumeClaim`. Plan how to preserve writes accepted since cutover before rolling back.
 
 ## How to create a new release
 

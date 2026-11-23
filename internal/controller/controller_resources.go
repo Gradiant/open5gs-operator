@@ -14,7 +14,6 @@ import (
 
 	netv1 "github.com/gradiant/open5gs-operator/api/v1"
 	monitoringv1 "github.com/prometheus-operator/prometheus-operator/pkg/apis/monitoring/v1"
-	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
@@ -49,32 +48,6 @@ func configMapEqual(cm1, cm2 *corev1.ConfigMap) bool {
 		reflect.DeepEqual(cm1.Annotations, cm2.Annotations)
 }
 
-func deploymentEqual(d1, d2 *appsv1.Deployment) bool {
-	if d1 == nil || d2 == nil {
-		return false
-	}
-
-	if !reflect.DeepEqual(d1.Labels, d2.Labels) {
-		return false
-	}
-
-	if d1.Spec.Template.Spec.ServiceAccountName != d2.Spec.Template.Spec.ServiceAccountName {
-		return false
-	}
-
-	if len(d1.Spec.Template.Spec.Containers) != len(d2.Spec.Template.Spec.Containers) {
-		return false
-	}
-
-	for i := range d1.Spec.Template.Spec.Containers {
-		if d1.Spec.Template.Spec.Containers[i].Image != d2.Spec.Template.Spec.Containers[i].Image {
-			return false
-		}
-	}
-
-	return true
-}
-
 func pvcEqual(pvc1, pvc2 *corev1.PersistentVolumeClaim) bool {
 	return pvc1.Spec.Resources.Requests[corev1.ResourceStorage] == pvc2.Spec.Resources.Requests[corev1.ResourceStorage] &&
 		pvc1.Spec.AccessModes[0] == pvc2.Spec.AccessModes[0]
@@ -94,6 +67,7 @@ func serviceMonitorEqual(sm1, sm2 *monitoringv1.ServiceMonitor) bool {
 }
 
 func serviceAccountEqual(sa1, sa2 *corev1.ServiceAccount) bool {
-	return reflect.DeepEqual(sa1.Labels, sa2.Labels) &&
+	return reflect.DeepEqual(sa1.AutomountServiceAccountToken, sa2.AutomountServiceAccountToken) &&
+		reflect.DeepEqual(sa1.Labels, sa2.Labels) &&
 		reflect.DeepEqual(sa1.Annotations, sa2.Annotations)
 }

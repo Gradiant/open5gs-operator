@@ -7,28 +7,33 @@
 package v1
 
 import (
+	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 )
 
 // Open5GSSpec defines the desired state of Open5GS
 type Open5GSSpec struct {
-	AMF            Open5GSFunction      `json:"amf,omitempty" default:"{\"enabled\":true,\"serviceAccount\":false,\"metrics\":true,\"serviceMonitor\":false}"`
-	AUSF           Open5GSFunction      `json:"ausf,omitempty" default:"{\"enabled\":true,\"serviceAccount\":false,\"metrics\":false,\"serviceMonitor\":false}"`
-	BSF            Open5GSFunction      `json:"bsf,omitempty" default:"{\"enabled\":true,\"serviceAccount\":false,\"metrics\":false,\"serviceMonitor\":false}"`
-	MongoDB        Open5GSFunction      `json:"mongoDB,omitempty" default:"{\"enabled\":true,\"serviceAccount\":false,\"metrics\":false,\"serviceMonitor\":false}"`
-	NRF            Open5GSFunction      `json:"nrf,omitempty" default:"{\"enabled\":true,\"serviceAccount\":false,\"metrics\":false,\"serviceMonitor\":false}"`
-	NSSF           Open5GSFunction      `json:"nssf,omitempty" default:"{\"enabled\":true,\"serviceAccount\":false,\"metrics\":false,\"serviceMonitor\":false}"`
-	PCF            Open5GSFunction      `json:"pcf,omitempty" default:"{\"enabled\":true,\"serviceAccount\":false,\"metrics\":true,\"serviceMonitor\":false}"`
-	SCP            Open5GSFunction      `json:"scp,omitempty" default:"{\"enabled\":true,\"serviceAccount\":false,\"metrics\":false,\"serviceMonitor\":false}"`
-	SMF            Open5GSFunction      `json:"smf,omitempty" default:"{\"enabled\":true,\"serviceAccount\":false,\"metrics\":true,\"serviceMonitor\":false}"`
-	UDM            Open5GSFunction      `json:"udm,omitempty" default:"{\"enabled\":true,\"serviceAccount\":false,\"metrics\":false,\"serviceMonitor\":false}"`
-	UDR            Open5GSFunction      `json:"udr,omitempty" default:"{\"enabled\":true,\"serviceAccount\":false,\"metrics\":false,\"serviceMonitor\":false}"`
-	UPF            Open5GSFunction      `json:"upf,omitempty" default:"{\"enabled\":true,\"serviceAccount\":false,\"metrics\":true,\"serviceMonitor\":false}"`
-	WebUI          Open5GSFunction      `json:"webui,omitempty" default:"{\"enabled\":false,\"serviceAccount\":false,\"metrics\":false,\"serviceMonitor\":false}"`
-	WebUIImage     string               `json:"webuiImage,omitempty" default:"docker.io/gradiant/open5gs-webui:2.7.5"`
-	Open5GSImage   string               `json:"open5gsImage,omitempty" default:"docker.io/gradiant/open5gs:2.7.5"`
-	MongoDBVersion string               `json:"mongoDBVersion,omitempty" default:"bitnami/mongodb:latest"`
-	Configuration  Open5GSConfiguration `json:"configuration,omitempty" default:"{\"mcc\":\"999\",\"mnc\":\"70\",\"region\":\"2\",\"set\":\"1\",\"tac\":\"0001\",\"slices\":[]}"`
+	AMF            Open5GSFunction `json:"amf,omitempty" default:"{\"enabled\":true,\"serviceAccount\":true,\"metrics\":true,\"serviceMonitor\":false}"`
+	AUSF           Open5GSFunction `json:"ausf,omitempty" default:"{\"enabled\":true,\"serviceAccount\":true,\"metrics\":false,\"serviceMonitor\":false}"`
+	BSF            Open5GSFunction `json:"bsf,omitempty" default:"{\"enabled\":true,\"serviceAccount\":true,\"metrics\":false,\"serviceMonitor\":false}"`
+	MongoDB        Open5GSFunction `json:"mongoDB,omitempty" default:"{\"enabled\":true,\"serviceAccount\":true,\"metrics\":false,\"serviceMonitor\":false}"`
+	NRF            Open5GSFunction `json:"nrf,omitempty" default:"{\"enabled\":true,\"serviceAccount\":true,\"metrics\":false,\"serviceMonitor\":false}"`
+	NSSF           Open5GSFunction `json:"nssf,omitempty" default:"{\"enabled\":true,\"serviceAccount\":true,\"metrics\":false,\"serviceMonitor\":false}"`
+	PCF            Open5GSFunction `json:"pcf,omitempty" default:"{\"enabled\":true,\"serviceAccount\":true,\"metrics\":true,\"serviceMonitor\":false}"`
+	SCP            Open5GSFunction `json:"scp,omitempty" default:"{\"enabled\":true,\"serviceAccount\":true,\"metrics\":false,\"serviceMonitor\":false}"`
+	SMF            Open5GSFunction `json:"smf,omitempty" default:"{\"enabled\":true,\"serviceAccount\":true,\"metrics\":true,\"serviceMonitor\":false}"`
+	UDM            Open5GSFunction `json:"udm,omitempty" default:"{\"enabled\":true,\"serviceAccount\":true,\"metrics\":false,\"serviceMonitor\":false}"`
+	UDR            Open5GSFunction `json:"udr,omitempty" default:"{\"enabled\":true,\"serviceAccount\":true,\"metrics\":false,\"serviceMonitor\":false}"`
+	UPF            Open5GSFunction `json:"upf,omitempty" default:"{\"enabled\":true,\"serviceAccount\":true,\"metrics\":true,\"serviceMonitor\":false}"`
+	WebUI          Open5GSFunction `json:"webui,omitempty" default:"{\"enabled\":false,\"serviceAccount\":true,\"metrics\":false,\"serviceMonitor\":false}"`
+	WebUIImage     string          `json:"webuiImage,omitempty" default:"docker.io/gradiant/open5gs-webui:2.8.0"`
+	Open5GSImage   string          `json:"open5gsImage,omitempty" default:"docker.io/gradiant/open5gs:2.8.0"`
+	MongoDBVersion string          `json:"mongoDBVersion,omitempty"`
+	// MongoDBVolumeClaim names an existing PVC for the official MongoDB image.
+	MongoDBVolumeClaim string `json:"mongoDBVolumeClaim,omitempty"`
+	// WebUIAdminSecret names a Secret with username and password keys for first startup.
+	WebUIAdminSecret string               `json:"webuiAdminSecret,omitempty"`
+	Configuration    Open5GSConfiguration `json:"configuration,omitempty" default:"{\"mcc\":\"999\",\"mnc\":\"70\",\"region\":\"2\",\"set\":\"1\",\"tac\":\"0001\",\"slices\":[]}"`
 }
 
 type Open5GSConfiguration struct {
@@ -47,14 +52,21 @@ type Open5GSSlice struct {
 
 type Open5GSFunction struct {
 	Enabled               *bool             `json:"enabled,omitempty" default:"true"`
-	ServiceAccount        *bool             `json:"serviceAccount,omitempty" default:"false"`
+	ServiceAccount        *bool             `json:"serviceAccount,omitempty" default:"true"`
 	Metrics               *bool             `json:"metrics,omitempty" default:"true"`
 	ServiceMonitor        *bool             `json:"serviceMonitor,omitempty" default:"false"`
 	Service               []Open5GSService  `json:"service,omitempty" default:"{\"name\":\"\",\"port\":0,\"serviceType\":\"\"}"`
 	GTPUDev               string            `json:"gtpuDev,omitempty" default:"eth0"`
 	DeploymentAnnotations map[string]string `json:"deploymentAnnotations,omitempty"`
+	// Resources overrides the default requests and limits for the main container.
+	Resources *Open5GSResources `json:"resources,omitempty"`
 	// Unprivileged runs the UPF without privileged:true/root (UPF only).
 	Unprivileged *bool `json:"unprivileged,omitempty" default:"false"`
+}
+
+type Open5GSResources struct {
+	Requests corev1.ResourceList `json:"requests,omitempty"`
+	Limits   corev1.ResourceList `json:"limits,omitempty"`
 }
 
 type Open5GSService struct {

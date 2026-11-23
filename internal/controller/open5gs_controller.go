@@ -57,6 +57,12 @@ func (r *Open5GSReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ct
 
 	setDefaultValues(open5gs)
 
+	if *open5gs.Spec.MongoDB.Enabled {
+		if err := r.selectMongoDBStorage(ctx, open5gs); err != nil {
+			return ctrl.Result{}, err
+		}
+	}
+
 	if *open5gs.Spec.AMF.Enabled {
 		if err := r.reconcileAMF(ctx, req, open5gs, logger); err != nil {
 			return ctrl.Result{}, err
@@ -208,21 +214,43 @@ func (r *Open5GSReconciler) reconcileComponent(ctx context.Context, open5gs *net
 
 	}
 
+	if serviceAccount != nil {
+		if err := ctrl.SetControllerReference(open5gs, serviceAccount, r.Scheme); err != nil {
+			return err
+		}
+		if err := reconcileServiceAccount(ctx, r, open5gs, serviceAccount, componentName, logger); err != nil {
+			return err
+		}
+	}
+
+	if pvc != nil {
+		if err := ctrl.SetControllerReference(open5gs, pvc, r.Scheme); err != nil {
+			return err
+		}
+		if err := reconcilePVC(ctx, r, open5gs, pvc, componentName, logger); err != nil {
+			return err
+		}
+	}
+
+	var configMapHash string
 	if configMap != nil {
 		if err := ctrl.SetControllerReference(open5gs, configMap, r.Scheme); err != nil {
 			return err
 		}
-		configMapHash, err := reconcileConfigMap(ctx, r, open5gs, configMap, componentName, logger)
+		var err error
+		configMapHash, err = reconcileConfigMap(ctx, r, open5gs, configMap, componentName, logger)
 		if err != nil {
 			return err
 		}
-		if deployment != nil {
-			if err := ctrl.SetControllerReference(open5gs, deployment, r.Scheme); err != nil {
-				return err
-			}
-			if err := reconcileDeployment(ctx, r, open5gs, deployment, configMapHash, componentName, logger); err != nil {
-				return err
-			}
+	}
+	if deployment != nil {
+		if componentName == "PCF" || componentName == "UDR" {
+			deployment.Spec.Template.Spec.InitContainers = append(deployment.Spec.Template.Spec.InitContainers,
+				waitForMongoContainer(open5gs.Name, defaultMongoDBImage))
+		}
+		setWorkloadDefaults(&deployment.Spec.Template.Spec, componentName, workloadSpec(open5gs.Spec, componentName))
+		if err := reconcileDeployment(ctx, r, open5gs, deployment, configMapHash, componentName, logger); err != nil {
+			return err
 		}
 	}
 
@@ -241,13 +269,10 @@ func (r *Open5GSReconciler) reconcileComponent(ctx context.Context, open5gs *net
 	desiredServiceNames := make(map[string]bool)
 	for _, service := range services {
 		desiredServiceNames[service.Name] = true
-		if err := reconcileService(ctx, r, open5gs, service, componentName, logger); err != nil {
-			return err
-		}
 	}
 
 	for _, existingService := range existingServices.Items {
-		if !desiredServiceNames[existingService.Name] {
+		if !desiredServiceNames[existingService.Name] && hasOwnerReference(&existingService, open5gs) {
 			if err := r.Client.Delete(ctx, &existingService); err != nil {
 				logger.Error(err, "Error deleting the Service", "component", componentName, "service", existingService.Name)
 				return err
@@ -293,23 +318,7 @@ func (r *Open5GSReconciler) reconcileComponent(ctx context.Context, open5gs *net
 		}
 	}
 
-	if pvc != nil {
-		if err := ctrl.SetControllerReference(open5gs, pvc, r.Scheme); err != nil {
-			return err
-		}
-		if err := reconcilePVC(ctx, r, open5gs, pvc, componentName, logger); err != nil {
-			return err
-		}
-	}
-
-	if serviceAccount != nil {
-		if err := ctrl.SetControllerReference(open5gs, serviceAccount, r.Scheme); err != nil {
-			return err
-		}
-		if err := reconcileServiceAccount(ctx, r, open5gs, serviceAccount, componentName, logger); err != nil {
-			return err
-		}
-	} else {
+	if serviceAccount == nil {
 		existingServiceAccounts := &corev1.ServiceAccountList{}
 		listOpts := []client.ListOption{
 			client.InNamespace(open5gs.Namespace),
@@ -322,7 +331,10 @@ func (r *Open5GSReconciler) reconcileComponent(ctx context.Context, open5gs *net
 			return err
 		}
 		for _, existingServiceAccount := range existingServiceAccounts.Items {
-			if err := r.Client.Delete(ctx, client.Object(&existingServiceAccount)); err != nil {
+			if !hasOwnerReference(&existingServiceAccount, open5gs) {
+				continue
+			}
+			if err := r.Client.Delete(ctx, &existingServiceAccount); err != nil {
 				logger.Error(err, "Error deleting the ServiceAccount", "component", componentName, "serviceAccount", existingServiceAccount.Name)
 				return err
 			}
@@ -474,9 +486,18 @@ func (r *Open5GSReconciler) reconcileMongoDB(ctx context.Context, req ctrl.Reque
 
 	}
 	deployment := CreateMongoDBDeployment(req.Namespace, open5gs.Name, open5gs.Spec.MongoDBVersion, envVars, serviceAccountName)
-	deployment.Spec.Strategy = appsv1.DeploymentStrategy{
-		Type: appsv1.RecreateDeploymentStrategyType,
+	if !isLegacyMongoDBImage(open5gs.Spec.MongoDBVersion) {
+		claimName := open5gs.Name + "-mongodb-data"
+		if open5gs.Spec.MongoDBVolumeClaim != "" {
+			claimName = open5gs.Spec.MongoDBVolumeClaim
+			pvc = nil
+		} else {
+			pvc.Name = claimName
+		}
+		configMap = nil
+		configureOfficialMongoDB(deployment, claimName)
 	}
+	deployment.Spec.Strategy = appsv1.DeploymentStrategy{Type: appsv1.RecreateDeploymentStrategyType}
 	return r.reconcileComponent(ctx, open5gs, componentName, logger, configMap, deployment, services, pvc, serviceAccount)
 }
 
@@ -783,7 +804,10 @@ func (r *Open5GSReconciler) reconcileUPF(ctx context.Context, req ctrl.Request, 
 	if err := ctrl.SetControllerReference(open5gs, entrypointConfigMap, r.Scheme); err != nil {
 		return err
 	}
-	reconcileConfigMap(ctx, r, open5gs, entrypointConfigMap, componentName, logger)
+	entrypointHash, err := reconcileConfigMap(ctx, r, open5gs, entrypointConfigMap, componentName, logger)
+	if err != nil {
+		return err
+	}
 
 	var serviceMonitor *monitoringv1.ServiceMonitor
 	if *open5gs.Spec.UPF.ServiceMonitor {
@@ -797,6 +821,10 @@ func (r *Open5GSReconciler) reconcileUPF(ctx context.Context, req ctrl.Request, 
 		serviceAccountName = serviceAccount.Name
 	}
 	deployment := CreateUPFDeployment(req.Namespace, open5gs.Name, open5gs.Spec.Open5GSImage, envVars, *open5gs.Spec.UPF.Metrics, serviceAccountName, open5gs.Spec.UPF.DeploymentAnnotations, unprivileged)
+	if deployment.Spec.Template.Annotations == nil {
+		deployment.Spec.Template.Annotations = map[string]string{}
+	}
+	deployment.Spec.Template.Annotations["open5gs/entrypoint-hash"] = entrypointHash
 	return r.reconcileComponent(ctx, open5gs, componentName, logger, configMap, deployment, services, serviceMonitor, serviceAccount)
 }
 
@@ -820,11 +848,11 @@ func (r *Open5GSReconciler) reconcileWebUI(ctx context.Context, req ctrl.Request
 		serviceAccount = CreateServiceAccount(req.Namespace, open5gs.Name, componentName)
 		serviceAccountName = serviceAccount.Name
 	}
-	deployment := CreateWebUIDeployment(req.Namespace, open5gs.Name, open5gs.Spec.WebUIImage, envVars, serviceAccountName, open5gs.Spec.MongoDBVersion)
+	deployment := CreateWebUIDeployment(req.Namespace, open5gs.Name, open5gs.Spec.WebUIImage, envVars, serviceAccountName, open5gs.Spec.WebUIAdminSecret)
 	return r.reconcileComponent(ctx, open5gs, componentName, logger, configMap, deployment, services, serviceAccount)
 }
 
-// This function deletes all the resources related to a component (with the OwnerReference set to the Open5GS CR)
+// Delete disabled workloads while retaining their persistent data.
 func (r *Open5GSReconciler) deleteComponentResources(ctx context.Context, req ctrl.Request, componentName string, open5gs *netv1.Open5GS, logger logr.Logger) error {
 	configMap := &corev1.ConfigMap{}
 	err := r.Client.Get(ctx, client.ObjectKey{Name: open5gs.Name + "-" + strings.ToLower(componentName), Namespace: req.Namespace}, configMap)
@@ -889,21 +917,6 @@ func (r *Open5GSReconciler) deleteComponentResources(ctx context.Context, req ct
 			logger.Error(err, "Error obtaining the ServiceMonitor", "component", componentName)
 			return err
 		}
-	}
-
-	pvc := &corev1.PersistentVolumeClaim{}
-	err = r.Client.Get(ctx, client.ObjectKey{Name: open5gs.Name + "-" + strings.ToLower(componentName), Namespace: req.Namespace}, pvc)
-	if err == nil {
-		if hasOwnerReference(pvc, open5gs) {
-			if err := r.Client.Delete(ctx, pvc); err != nil {
-				logger.Error(err, "Error deleting the PVC", "component", componentName)
-				return err
-			}
-			logger.Info("PVC deleted", "component", componentName)
-		}
-	} else if !errors.IsNotFound(err) {
-		logger.Error(err, "Error obtaining the PVC", "component", componentName)
-		return err
 	}
 
 	serviceAccount := &corev1.ServiceAccount{}
@@ -974,6 +987,10 @@ func reconcileDeployment(ctx context.Context, r *Open5GSReconciler, open5gs *net
 	}
 	deployment.Spec.Template.Annotations["open5gs/configmap-hash"] = configMapHash
 
+	if err := recordDeploymentIntent(deployment); err != nil {
+		return err
+	}
+
 	foundDeployment := &appsv1.Deployment{}
 	err := r.Client.Get(ctx, client.ObjectKey{Name: deployment.Name, Namespace: deployment.Namespace}, foundDeployment)
 	if err != nil {
@@ -992,61 +1009,7 @@ func reconcileDeployment(ctx context.Context, r *Open5GSReconciler, open5gs *net
 			return nil
 		}
 
-		upfDeploymentName := open5gs.Name + "-upf"
-		if foundDeployment.Name == upfDeploymentName {
-			allowedAnnotations := map[string]struct{}{"open5gs/configmap-hash": {}}
-			if open5gs.Spec.UPF.DeploymentAnnotations != nil {
-				for k := range open5gs.Spec.UPF.DeploymentAnnotations {
-					allowedAnnotations[k] = struct{}{}
-				}
-			}
-
-			newAnnotations := make(map[string]string)
-			newAnnotations["open5gs/configmap-hash"] = configMapHash
-			if open5gs.Spec.UPF.DeploymentAnnotations != nil {
-				for k, v := range open5gs.Spec.UPF.DeploymentAnnotations {
-					newAnnotations[k] = v
-				}
-			}
-
-			current := foundDeployment.Spec.Template.Annotations
-			needUpdate := false
-			if len(current) != len(newAnnotations) {
-				needUpdate = true
-			} else {
-				for k, v := range newAnnotations {
-					if current[k] != v {
-						needUpdate = true
-						break
-					}
-				}
-				for k := range current {
-					if _, ok := newAnnotations[k]; !ok {
-						needUpdate = true
-						break
-					}
-				}
-			}
-			if needUpdate {
-				foundDeployment.Spec.Template.Annotations = newAnnotations
-				if err := r.Client.Update(ctx, foundDeployment); err != nil {
-					logger.Error(err, "Failed to update UPF Deployment annotations", "component", componentName)
-					return err
-				}
-				logger.Info("UPF Deployment annotations reconciled", "component", componentName)
-			}
-			return nil
-		}
-
-		if !deploymentEqual(deployment, foundDeployment) || foundDeployment.Spec.Template.Annotations["open5gs/configmap-hash"] != configMapHash {
-			foundDeployment.Spec = deployment.Spec
-			foundDeployment.Spec.Template.Annotations["open5gs/configmap-hash"] = configMapHash
-			if err := r.Client.Update(ctx, foundDeployment); err != nil {
-				logger.Error(err, "Failed to update the Deployment", "component", componentName)
-				return err
-			}
-			logger.Info("Deployment updated", "component", componentName)
-		}
+		return applyDeployment(ctx, r.Client, foundDeployment, deployment)
 	}
 	return nil
 }
@@ -1185,6 +1148,7 @@ func reconcileServiceAccount(ctx context.Context, r *Open5GSReconciler, open5gs 
 		if !serviceAccountEqual(serviceAccount, foundServiceAccount) {
 			foundServiceAccount.Annotations = serviceAccount.Annotations
 			foundServiceAccount.Labels = serviceAccount.Labels
+			foundServiceAccount.AutomountServiceAccountToken = serviceAccount.AutomountServiceAccountToken
 			if err := r.Client.Update(ctx, foundServiceAccount); err != nil {
 				logger.Error(err, "Failed to update the ServiceAccount", "component", componentName)
 				return err
@@ -1308,64 +1272,61 @@ func setDefaultValues(open5gs *netv1.Open5GS) {
 		open5gs.Spec.Configuration.Slices = append(open5gs.Spec.Configuration.Slices, slice)
 	}
 	if open5gs.Spec.Open5GSImage == "" {
-		open5gs.Spec.Open5GSImage = "docker.io/gradiant/open5gs:2.7.5"
+		open5gs.Spec.Open5GSImage = defaultOpen5GSImage
 	}
 	if open5gs.Spec.WebUIImage == "" {
-		open5gs.Spec.WebUIImage = "docker.io/gradiant/open5gs-webui:2.7.5"
-	}
-	if open5gs.Spec.MongoDBVersion == "" {
-		open5gs.Spec.MongoDBVersion = "bitnami/mongodb:latest"
+		open5gs.Spec.WebUIImage = defaultWebUIImage
 	}
 	if open5gs.Spec.AMF.ServiceAccount == nil {
-		defaultAMFServiceAccount := false
+		defaultAMFServiceAccount := true
 		open5gs.Spec.AMF.ServiceAccount = &defaultAMFServiceAccount
 	}
 	if open5gs.Spec.AUSF.ServiceAccount == nil {
-		defaultAUSFServiceAccount := false
+		defaultAUSFServiceAccount := true
 		open5gs.Spec.AUSF.ServiceAccount = &defaultAUSFServiceAccount
 	}
 	if open5gs.Spec.BSF.ServiceAccount == nil {
-		defaultBSFServiceAccount := false
+		defaultBSFServiceAccount := true
 		open5gs.Spec.BSF.ServiceAccount = &defaultBSFServiceAccount
 	}
 	if open5gs.Spec.MongoDB.ServiceAccount == nil {
-		defaultMongoDBServiceAccount := false
+		defaultMongoDBServiceAccount := true
 		open5gs.Spec.MongoDB.ServiceAccount = &defaultMongoDBServiceAccount
 	}
 	if open5gs.Spec.NRF.ServiceAccount == nil {
-		defaultNRFServiceAccount := false
+		defaultNRFServiceAccount := true
 		open5gs.Spec.NRF.ServiceAccount = &defaultNRFServiceAccount
 	}
 	if open5gs.Spec.NSSF.ServiceAccount == nil {
-		defaultNSSFServiceAccount := false
+		defaultNSSFServiceAccount := true
 		open5gs.Spec.NSSF.ServiceAccount = &defaultNSSFServiceAccount
 	}
 	if open5gs.Spec.PCF.ServiceAccount == nil {
-		defaultPCFServiceAccount := false
+		defaultPCFServiceAccount := true
 		open5gs.Spec.PCF.ServiceAccount = &defaultPCFServiceAccount
 	}
 	if open5gs.Spec.SCP.ServiceAccount == nil {
-		defaultSCPServiceAccount := false
+		defaultSCPServiceAccount := true
 		open5gs.Spec.SCP.ServiceAccount = &defaultSCPServiceAccount
 	}
 	if open5gs.Spec.SMF.ServiceAccount == nil {
-		defaultSMFServiceAccount := false
+		defaultSMFServiceAccount := true
 		open5gs.Spec.SMF.ServiceAccount = &defaultSMFServiceAccount
 	}
 	if open5gs.Spec.UDM.ServiceAccount == nil {
-		defaultUDMServiceAccount := false
+		defaultUDMServiceAccount := true
 		open5gs.Spec.UDM.ServiceAccount = &defaultUDMServiceAccount
 	}
 	if open5gs.Spec.UDR.ServiceAccount == nil {
-		defaultUDRServiceAccount := false
+		defaultUDRServiceAccount := true
 		open5gs.Spec.UDR.ServiceAccount = &defaultUDRServiceAccount
 	}
 	if open5gs.Spec.UPF.ServiceAccount == nil {
-		defaultUPFServiceAccount := false
+		defaultUPFServiceAccount := true
 		open5gs.Spec.UPF.ServiceAccount = &defaultUPFServiceAccount
 	}
 	if open5gs.Spec.WebUI.ServiceAccount == nil {
-		defaultWebUIServiceAccount := false
+		defaultWebUIServiceAccount := true
 		open5gs.Spec.WebUI.ServiceAccount = &defaultWebUIServiceAccount
 	}
 	if open5gs.Spec.UPF.GTPUDev == "" {

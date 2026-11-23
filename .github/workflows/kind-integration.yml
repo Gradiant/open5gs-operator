@@ -1,0 +1,56 @@
+name: Operator integration
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  kind:
+    # Match 5g-charts CI: MongoDB 8.0.34 can exit during startup on newer Linux kernels.
+    runs-on: ubuntu-22.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - uses: azure/setup-helm@v4
+        with:
+          version: v3.18.4
+      - name: Report runner kernel
+        run: uname -r
+      - name: Ensure the runner has a TUN device
+        run: |
+          if [ ! -c /dev/net/tun ]; then
+            sudo mkdir -p /dev/net
+            sudo mknod -m 0666 /dev/net/tun c 10 200
+          fi
+      - uses: helm/kind-action@v1.15.0
+        with:
+          cluster_name: open5gs-kind
+          node_image: kindest/node:v1.35.0
+          config: test/kind/cluster.yaml
+      - name: Test and install the operator
+        run: |
+          go test ./api/... ./internal/... ./cmd/...
+          docker build -t open5gs-operator:kind .
+          kind load docker-image --name open5gs-kind open5gs-operator:kind
+          helm upgrade --install open5gs-operator charts/open5gs-operator --wait --timeout 3m \
+            --namespace open5gs-system --create-namespace \
+            --set controllerManager.manager.image.repository=open5gs-operator \
+            --set controllerManager.manager.image.tag=kind
+      - name: Validate Open5GS and subscriber traffic
+        run: bash test/kind/smoke.sh
+      - name: Validate MongoDB migration and rollback
+        run: bash test/kind/mongodb-migration.sh
+      - name: Collect logs on failure
+        if: failure()
+        run: |
+          kubectl logs -n open5gs-system -l control-plane=controller-manager --tail=150 || true
+          for namespace in open5gs-kind-smoke open5gs-kind-migration; do
+            kubectl -n "$namespace" logs -l app.kubernetes.io/name=mongodb -c mongodb --tail=100 || true
+            kubectl -n "$namespace" logs -l app.kubernetes.io/name=mongodb -c mongodb --previous --tail=100 || true
+          done

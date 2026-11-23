@@ -7,9 +7,9 @@ metadata:
   name: open5gs-test
   namespace: open5gs-operator-system-test
 spec:
-  open5gsImage: "docker.io/gradiant/open5gs:2.7.5"
-  webuiImage: "docker.io/gradiant/open5gs-webui:2.7.5"
-  mongoDBVersion: "bitnami/mongodb:latest"
+  open5gsImage: "docker.io/gradiant/open5gs:2.8.0"
+  webuiImage: "docker.io/gradiant/open5gs-webui:2.8.0"
+  webuiAdminSecret: webui-admin
   amf:
     enabled: true
     serviceAccount: true
